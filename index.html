@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Inspect portable infrastructure test evidence locally, without uploading a report." />
+    <title>Infra Test Evidence — local evidence reader</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to evidence reader</a>
+    <header class="masthead">
+      <a class="wordmark" href="/" aria-label="Infra Test Evidence home">ITE<span>•</span></a>
+      <nav aria-label="Primary"><a href="#format">Record format</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav>
+    </header>
+    <main id="main">
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Portable proof, locally read</p>
+        <h1 id="page-title">Turn a test run into evidence someone can inspect.</h1>
+        <p class="lede">Drop a JSON record below. It stays in this browser and is checked for the fields a reviewer needs before trusting a deployment.</p>
+      </section>
+      <section class="reader" aria-labelledby="reader-title">
+        <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a record</h2></div><output id="status" class="status" aria-live="polite">Waiting for evidence</output></div>
+        <label class="drop-zone" for="evidence-file"><span class="drop-mark" aria-hidden="true">↓</span><span><strong>Choose a JSON evidence file</strong><small>or drag it here · nothing is uploaded</small></span><input id="evidence-file" type="file" accept="application/json,.json" /></label>
+        <p class="file-error" id="file-error" role="alert" hidden></p>
+        <div id="result" class="result empty" aria-live="polite"><p>Start with the included example or select your own record.</p><button id="load-example" class="text-button" type="button">Load a sample report</button></div>
+      </section>
+      <section id="format" class="format" aria-labelledby="format-title"><p class="eyebrow">Small by design</p><h2 id="format-title">The record format</h2><pre tabindex="0" aria-label="Example evidence JSON"><code>{
+  "run": "staging-2026-08-27.1",
+  "environment": "staging",
+  "recordedAt": "2026-08-27T12:00:00Z",
+  "checks": [{ "name": "HTTP health", "status": "pass" }]
+}</code></pre><p>Use the companion CLI to validate this shape in CI: <code>infra-test-evidence --json evidence.json</code>.</p></section>
+    </main>
+    <footer><span>Infra Test Evidence 0.1.0</span><span>Local-first. No trackers. No uploads.</span></footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

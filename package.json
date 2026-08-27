@@ -1,0 +1,38 @@
+{
+  "name": "infra-test-evidence",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A local-first CLI and static viewer for portable infrastructure test evidence.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:site",
+    "build:site": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "npm run test:frontend && npm run test:rust",
+    "test:frontend": "vitest run tests/evidence.test.ts",
+    "test:rust": "cargo test --locked",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm test",
+    "package:check": "cargo package --locked && npm pack --dry-run",
+    "consumer:check": "cargo run --locked -- --json examples/passing-evidence.json",
+    "qa:browser": "playwright test",
+    "qa:a11y": "playwright test --grep accessibility"
+  },
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.0",
+    "@playwright/test": "1.58.2",
+    "@types/node": "22.15.3",
+    "@typescript-eslint/eslint-plugin": "8.33.0",
+    "@typescript-eslint/parser": "8.33.0",
+    "eslint": "9.28.0",
+    "typescript": "5.8.3",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11"
+  }
+}

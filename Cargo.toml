@@ -1,0 +1,17 @@
+[package]
+name = "infra-test-evidence"
+version = "0.1.0"
+edition = "2024"
+description = "Validate portable infrastructure test evidence"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/B-Divyesh/sf-infra-test-evidence"
+keywords = ["infrastructure", "testing", "evidence", "cli"]
+categories = ["command-line-utilities", "development-tools::testing"]
+exclude = ["dist/", "node_modules/", "playwright-report/", "test-results/"]
+
+[[bin]]
+name = "infra-test-evidence"
+path = "src-rust/main.rs"
+
+[dependencies]

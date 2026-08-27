@@ -1,0 +1,9 @@
+{
+  "run": "staging-2026-08-27.1",
+  "environment": "staging",
+  "recordedAt": "2026-08-27T12:00:00Z",
+  "checks": [
+    { "name": "HTTP health endpoint", "status": "pass", "durationMs": 148 },
+    { "name": "Database migration", "status": "pass", "durationMs": 734 }
+  ]
+}
