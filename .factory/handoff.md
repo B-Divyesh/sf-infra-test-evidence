@@ -51,6 +51,16 @@ Results:
 `cargo package --locked` is the ready-to-publish package check; do not publish
 from this repository.
 
+## Deployment
+
+Commit `3022233a5d717cc5829063bf13d530bc78b43f7e` was pushed to `origin/main`.
+This is prepared for the factory's **Standard static** deployment: the only
+publish directory is `dist/site/` and the verified entry point is
+`dist/site/index.html`. The deployment factory owns hosting/DNS. A direct
+health probe from this container could not resolve
+`infra-test-evidence.sociobot.in`, so the public hostname cannot be verified
+from this execution environment.
+
 ## Known gap
 
 The base candidate did not contain `.factory/brief.json`, despite the README
