@@ -10,7 +10,7 @@
     "build:site": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "npm run test:frontend && npm run test:rust",
-    "test:frontend": "vitest run tests/evidence.test.ts",
+    "test:frontend": "vitest run tests/evidence.test.ts tests/cli.test.ts",
     "test:rust": "cargo test --locked",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

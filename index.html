@@ -16,7 +16,7 @@
       <section class="intro" aria-labelledby="page-title">
         <p class="eyebrow">Portable proof, locally read</p>
         <h1 id="page-title">Turn a test run into evidence someone can inspect.</h1>
-        <p class="lede">Drop a JSON record below. It stays in this browser and is checked for the fields a reviewer needs before trusting a deployment.</p>
+        <p class="lede">Drop a portable evidence record below. It stays in this browser. In CI, the companion CLI turns OpenTofu or Terraform test JSON into JUnit and a redacted static evidence page.</p>
       </section>
       <section class="reader" aria-labelledby="reader-title">
         <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a record</h2></div><output id="status" class="status" aria-live="polite">Waiting for evidence</output></div>
@@ -24,12 +24,12 @@
         <p class="file-error" id="file-error" role="alert" hidden></p>
         <div id="result" class="result empty" aria-live="polite"><p>Start with the included example or select your own record.</p><button id="load-example" class="text-button" type="button">Load a sample report</button></div>
       </section>
-      <section id="format" class="format" aria-labelledby="format-title"><p class="eyebrow">Small by design</p><h2 id="format-title">The record format</h2><pre tabindex="0" aria-label="Example evidence JSON"><code>{
+      <section id="format" class="format" aria-labelledby="format-title"><p class="eyebrow">Small by design</p><h2 id="format-title">CI outputs and record format</h2><p>Run the converter against <code>tofu test -json</code> or <code>terraform test -json</code> output to create a JUnit report and a self-contained reviewer page. The page includes test inputs, assertion paths, redacted plan changes, failures, and provenance.</p><pre tabindex="0" aria-label="CLI conversion command"><code>infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl</code></pre><p>The local reader also accepts the compact portable record used by earlier workflows:</p><pre tabindex="0" aria-label="Example portable evidence JSON"><code>{
   "run": "staging-2026-08-27.1",
   "environment": "staging",
   "recordedAt": "2026-08-27T12:00:00Z",
   "checks": [{ "name": "HTTP health", "status": "pass" }]
-}</code></pre><p>Use the companion CLI to validate this shape in CI: <code>infra-test-evidence --json evidence.json</code>.</p></section>
+}</code></pre><p>Use <code>infra-test-evidence --json evidence.json</code> to strictly validate this compact form in CI.</p></section>
     </main>
     <footer><span>Infra Test Evidence 0.1.0</span><span>Local-first. No trackers. No uploads.</span></footer>
     <script type="module" src="/src/main.ts"></script>

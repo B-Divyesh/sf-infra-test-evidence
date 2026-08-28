@@ -1,37 +1,79 @@
 # Infra Test Evidence
 
-Infra Test Evidence is a small Rust CLI and static, local-first viewer for a
-portable record of an infrastructure test run. It is for the engineer who needs
-to hand a reviewer an inspectable summary without uploading test output to a
-third party.
+Infra Test Evidence converts local OpenTofu or Terraform `test -json` output
+into a standards-compatible JUnit report and a redacted static evidence page.
+It is for module maintainers who need a reviewer to inspect failed IaC tests
+without uploading logs or plans to another service.
 
-The viewer is available at https://infra-test-evidence.sociobot.in.
+The companion landing page is https://infra-test-evidence.sociobot.in. It is a
+local-only reader for the compact evidence record used by older workflows.
 
-## CLI usage
-
-Build the binary, then validate a record:
+## Install
 
 ```sh
-cargo run -- --json examples/passing-evidence.json
-# {"valid":true,"checks":2,"errors":[]}
+cargo install infra-test-evidence
 ```
 
-The record needs string `run`, `environment`, and `recordedAt` fields and one
-or more objects in `checks`. `--json` makes the result suitable for CI. The
-CLI exits 0 for a valid record, 2 for an invalid or unreadable record, and 64
-for incorrect usage. It never sends data over the network.
+Or build it from a checkout:
 
-## Develop and verify
+```sh
+cargo build --release --locked
+```
+
+## Convert OpenTofu or Terraform test output
+
+Capture the JSON-lines output, then create both review outputs:
+
+```sh
+tofu test -json > tofu-test.jsonl
+infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl
+# Terraform works the same way:
+# terraform test -json > terraform-test.jsonl
+```
+
+`report.xml` is a JUnit test suite suitable for CI consumers. `evidence/`
+contains `index.html` and `evidence.json`; open `evidence/index.html` directly
+or serve that directory statically. It records test-case inputs, assertion
+paths where emitted by the runner, redacted plan-change summaries, failures,
+and source provenance (including the input SHA-256). It never sends data over
+the network.
+
+Secret- and resource-identifier-named fields are recursively redacted before
+they reach the evidence artifact. The source input is never copied to the
+artifact. See `examples/tofu-test.jsonl` for a complete sample.
+
+## Strict validation and CI
+
+The existing compact record remains supported for portable workflows:
+
+```sh
+infra-test-evidence --json examples/passing-evidence.json
+# {"checks":2,"errors":[],"valid":true}
+```
+
+That record requires non-empty `run`, `environment`, and `recordedAt` strings
+and at least one check with a non-empty `name` and supported `status` (`pass`,
+`fail`, `error`, or `skip`). Invalid JSON and incomplete records exit 2.
+
+The converter exits 0 for valid input, 2 for invalid input or output failures,
+and 64 for incorrect usage. `--help` documents every option. `--json` prints a
+machine-readable validation result for either supported input form.
+
+## Develop, test, and deploy
 
 ```sh
 npm ci
+npm test
 npm run check
-npm run build:site       # creates dist/site/index.html
-npm run qa:browser       # desktop + mobile and axe smoke test
-cargo package --locked   # ready-to-publish Rust package check
+npm run build:site       # creates dist/site/
+npm run qa:browser       # desktop + 390px mobile + policy routes
+npm run qa:a11y
+npm run package:check    # cargo package and npm pack dry run
 ```
 
-Run `npm run dev` for the viewer. Deploy `dist/site/` as a static site.
+Deploy `dist/site/` as a static site. The emitted `staticwebapp.config.json`
+sets restrictive browser response policies and immutable caching for hashed
+assets. No analytics, remote fonts, CDNs, browser storage, or uploads are used.
 
 ## License
 

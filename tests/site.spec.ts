@@ -18,3 +18,14 @@ test('has no serious accessibility violations', async ({ page }) => {
   const scan = await new AxeBuilder({ page: page as never }).analyze();
   expect(scan.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? '')).map((violation) => violation.id)).toEqual([]);
 });
+
+test('publishes policy documents and exposes a visible file focus ring', async ({ page }) => {
+  await page.goto('/privacy/');
+  await expect(page).toHaveTitle('Privacy — Infra Test Evidence');
+  await expect(page.getByRole('heading', { name: 'Privacy' })).toBeVisible();
+  await page.goto('/terms/');
+  await expect(page.getByRole('heading', { name: 'Terms' })).toBeVisible();
+  await page.goto('/');
+  await page.locator('#evidence-file').focus();
+  await expect(page.locator('.drop-zone')).toHaveCSS('outline-style', 'solid');
+});
