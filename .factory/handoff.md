@@ -67,6 +67,13 @@ The repair commit is 8bdd4ec. The factory owns registry credentials; do not
 publish from this worker. The pushed main branch is the static deployment
 trigger; deploy root remains dist/site.
 
+At 04:14 UTC, immediately after push, the public URL still served the previous
+candidate revision: its root hash was 7b86dc1c and favicon.svg returned 404.
+The current committed build includes favicon.svg and has passed all local
+static-host checks. The external factory publish queue had not refreshed
+within this worker window; verify the favicon route and current root bytes
+after the queue applies main.
+
 The deployment class remains static and the deploy root remains dist/site.
 There is no service worker or browser storage; the landing page is not a PWA.
 Generated reviewer artifacts are self-contained and can be opened offline.
