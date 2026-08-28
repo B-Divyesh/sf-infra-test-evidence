@@ -34,7 +34,7 @@ Results:
 - `npm audit --audit-level=high` reported 0 vulnerabilities.
 - `npm run build` emitted `dist/site/index.html` (3.35 kB), CSS (5.48 kB; 1.99 kB gzip), JS (3.44 kB; 1.55 kB gzip), both policy pages, and `staticwebapp.config.json`. Initial JS and CSS are within the 200 kB / 50 kB static-product budgets.
 - `npm run qa:browser` passed 6/6 Chromium checks across desktop and iPhone 13 (390px): sample load, console cleanliness, policy routes, and visible keyboard file-input focus. `npm run qa:a11y` passed 2/2 axe scans with no serious or critical violations.
-- `npm run package:check` passed `cargo package --locked` (34 files, 49.8 kB compressed) and `npm pack --dry-run`. This is ready to publish; no publish was attempted because registry credentials belong to the factory.
+- `npm run package:check` passed `cargo package --locked` (34 files, 50.9 kB compressed) and `npm pack --dry-run`. This is ready to publish; no publish was attempted because registry credentials belong to the factory.
 - A clean release-package consumer install succeeded with:
 
   ```sh
