@@ -2,7 +2,7 @@
 
 ## Repair delivered
 
-Repair commit: `2151cb8` (`repair: convert tofu evidence and harden static site`), pushed to `origin/main` on 2026-08-28 UTC.
+Repair series: `2151cb8` (`repair: convert tofu evidence and harden static site`) and `c83b725` (`fix: redact legacy failure details`), pushed to `origin/main` on 2026-08-28 UTC.
 
 This repair addresses every finding in `.factory/verification-2.md` while preserving the compact local evidence record and reader that previously passed.
 
