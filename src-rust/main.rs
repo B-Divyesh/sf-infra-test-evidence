@@ -66,7 +66,7 @@ fn parse_legacy(object: &Map<String, Value>, digest: String) -> Result<Report, V
         if check_status.is_none() { errors.push(format!("check {} needs a supported status (pass, fail, error, or skip)", index + 1)); }
         if let (Some(name), Some(check_status)) = (name, check_status) {
             let duration_seconds = check.get("durationMs").and_then(Value::as_f64).map(|value| value / 1000.0);
-            let failure = if check_status == "pass" { None } else { string_field(check, "message") };
+            let failure = if check_status == "pass" { None } else { string_field(check, "message").map(|message| redact_inline(&message)) };
             cases.push(Case { name, class_name: string_field(object, "run").unwrap_or_else(|| "legacy-evidence".to_owned()), status: check_status, duration_seconds, inputs: vec![format!("environment={}", string_field(object, "environment").unwrap_or_default())], assertions: Vec::new(), failure });
         }
     }
@@ -241,6 +241,8 @@ mod tests {
         assert_eq!(report.cases[0].status, "pass");
         assert!(parse_report(r#"{"run":"x","environment":"prod","recordedAt":"now","checks":[{}]"#).is_err());
         assert!(parse_report(r#"{"run":"","environment":"","recordedAt":"","checks":[{}]}"#).is_err());
+        let failure = parse_report(r#"{"run":"x","environment":"prod","recordedAt":"now","checks":[{"name":"x","status":"fail","message":"token=do-not-leak"}]}"#).unwrap();
+        assert_eq!(failure.cases[0].failure.as_deref(), Some("[REDACTED]"));
     }
     #[test]
     fn converts_tofu_events_to_junit_and_redacted_artifact() {
