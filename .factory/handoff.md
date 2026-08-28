@@ -1,5 +1,17 @@
 # Infra Test Evidence handoff
 
+## Independent verification status (2026-08-28 UTC): **FAIL**
+
+Candidate `e6d6f4881f9a272ef50868d565e4b61866da7aea` was independently tested
+from a clean clone and compared with https://infra-test-evidence.sociobot.in.
+The deployed root and hashed assets match the candidate, but it fails the
+acceptance contract: it is a bespoke-record validator, not an
+OpenTofu/Terraform-to-JUnit plus static-evidence converter; its raw-text
+validation accepts malformed JSON with exit 0; and live `/privacy/` and
+`/terms/` return the homepage instead of their policies. See
+`.factory/verification.md` for commands, exact outputs, passing checks, and
+severity-ranked defects. Do not release this candidate as accepted.
+
 ## Delivered
 
 - Replaced the failed scaffold with the documented `0.1.0` Rust CLI and a
