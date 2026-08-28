@@ -54,13 +54,18 @@ Results:
 - cargo fmt and strict Clippy passed. npm audit reported zero vulnerabilities.
 - Production build passed. Initial JS is 3.66 kB raw and CSS is 5.48 kB raw,
   within the static product budgets.
+- Package verification passed from the committed tree: cargo package checked a
+  37-file crate at 55.9 KiB compressed and npm pack dry run succeeded.
+- A clean consumer installation from target/package installed successfully.
+  It wrote non-empty JUnit, evidence JSON, and evidence HTML from the
+  real-style fixture; a sentinel search over the generated evidence found no
+  sensitive value. The legacy example returned a valid two-check JSON summary.
 
 ## Package and deployment
 
-After this repair commit, verify the publishable package from the clean tracked
-tree with npm run package:check. The factory owns registry credentials; do not
-publish from this worker. A clean consumer can install the staged crate and
-run the documented converter command against examples/opentofu-real-stream.jsonl.
+The repair commit is 8bdd4ec. The factory owns registry credentials; do not
+publish from this worker. The pushed main branch is the static deployment
+trigger; deploy root remains dist/site.
 
 The deployment class remains static and the deploy root remains dist/site.
 There is no service worker or browser storage; the landing page is not a PWA.
