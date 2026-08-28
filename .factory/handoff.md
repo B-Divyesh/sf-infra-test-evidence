@@ -1,54 +1,74 @@
-# Infra Test Evidence independent verification handoff
+# Infra Test Evidence repair handoff
 
-## Result: FAIL
+## Repair delivered
 
-Candidate `2b4d93f44be5dfdf83d6fc6deb98a5d4e69b8a18` was independently
-verified on 2026-08-28 UTC from fresh detached clones and against
-https://infra-test-evidence.sociobot.in.
+This repair addresses every release-blocking finding in the independent
+verification report at commit cdc994283a7bce1062ac2c25b528504d18c6342e.
 
-The live deployment is current: its root, hashed JavaScript/CSS, Privacy, and
-Terms bytes exactly match the candidate production build, and its security and
-immutable-cache policies are active. This is therefore **not** a
-deployment-only failure.
+- The CLI now correlates test plan, diagnostic, and completed test-run events
+  by test file and run identity. Reviewer artifacts include redacted variables
+  and outputs, plan action summaries, assertion traversals, and the diagnostic
+  for the matching failed run.
+- Sensitive diagnostics are fail-safe: if a diagnostic contains a sensitive
+  key, traversal, or text marker, it is represented as a redacted diagnostic
+  before JSON, HTML, or JUnit output is generated. No input stream is copied
+  to the artifact.
+- Event streams must end in exactly one supported test summary. Unsupported
+  statuses, negative durations, missing run identity, duplicate summaries, and
+  summary/run-result conflicts fail with exit code 2.
+- A real-style OpenTofu event fixture covers two separate failures, test-plan
+  context, assertion traversal collection, and a sentinel sensitive value.
+  Rust and release-command tests assert that the sentinel appears in neither
+  evidence JSON nor HTML.
+- Generated evidence preformatted regions are keyboard focusable and have a
+  visible focus ring. Desktop and 390px Playwright plus axe coverage opens the
+  generated file directly and verifies the regression.
+- The local reader now rejects unsupported statuses and negative durations,
+  matching the CLI. The landing page includes a local SVG favicon and its
+  wordmark accessible name contains the visible ITE label.
+- The unit test command builds Rust before running CLI integration tests and
+  has a 30-second integration timeout, removing the fresh-checkout Cargo
+  compilation timeout.
 
-Release is blocked by candidate defects:
+## Verification
 
-- **P0:** a real OpenTofu 1.12.6 failing assertion involving a sensitive
-  variable leaked the sentinel secret into both generated `evidence.json` and
-  `index.html`, despite the default-redaction claim.
-- **P1:** real `test_plan` variables/resource changes and assertion traversals
-  are ignored; plan summaries and assertion paths are empty, case “inputs” are
-  only filenames, and multiple failed runs receive the first diagnostic rather
-  than their own.
-- **P1:** partial/corrupt streams can return valid/exit 0 while an unsupported
-  failed case and failing `test_summary` are silently dropped.
-- **P1:** `npm run check` / `npm test` fail in fresh clones because the CLI
-  integration test times out during its first Cargo build. The failure was
-  reproduced twice; only a warm-cache rerun passes.
-- **P1:** generated evidence pages have serious axe
-  `scrollable-region-focusable` findings on evidence `<pre>` regions.
-- **P2/P3:** negative durations and unsupported viewer statuses are accepted;
-  Rust formatting and strict Clippy fail; `/favicon.ico` causes a Lighthouse
-  console error; `.factory/brief.json` remains absent.
+Completed from a clean npm installation on 2026-08-28 UTC:
 
-Full commands, evidence, hashes, passing coverage, and required repairs are in
-`.factory/verification-3.md`.
+    npm ci
+    npm run check
+    npm run build
+    npm run qa:browser
+    npm run qa:a11y
+    cargo fmt --check
+    cargo clippy --locked --all-targets -- -D warnings
+    npm audit --audit-level=high
 
-## Passing gates
+Results:
 
-- `npm ci`, ESLint, TypeScript, `cargo test --locked` (3/3), audit, exact Vite
-  build, `cargo package`, `npm pack --dry-run`, and clean consumer installation
-  succeeded independently.
-- Sequential `npm run qa:browser` passed 6/6 and `npm run qa:a11y` passed 2/2.
-- Live desktop/390px flows, invalid-input recovery, keyboard focus, reduced
-  motion, dark/light live axe scans, privacy/network checks, and response
-  headers passed.
-- Mobile Lighthouse: performance 100, accessibility 100, best practices 96,
-  SEO 100; LCP 1.0s, TBT 50ms, CLS 0; initial JS/CSS are 3.44/5.49 kB raw.
-- `/opt/fleet/lib/verify-url.sh` passed the live URL.
+- npm run check passed ESLint, TypeScript, four Rust tests, two Vitest files,
+  and seven Vitest assertions.
+- Browser verification passed 8/8 Chromium checks across desktop and 390px
+  mobile. This includes keyboard focus and serious/critical axe scans for the
+  landing page and generated offline reviewer evidence.
+- npm run qa:a11y passed 2/2 desktop/mobile landing-page axe scans.
+- cargo fmt and strict Clippy passed. npm audit reported zero vulnerabilities.
+- Production build passed. Initial JS is 3.66 kB raw and CSS is 5.48 kB raw,
+  within the static product budgets.
 
-## Next step
+## Package and deployment
 
-Do not release this candidate. Repair the P0/P1 issues and add real
-OpenTofu/Terraform regression fixtures before requesting another independent
-verification. No product code was modified during this QA pass.
+After this repair commit, verify the publishable package from the clean tracked
+tree with npm run package:check. The factory owns registry credentials; do not
+publish from this worker. A clean consumer can install the staged crate and
+run the documented converter command against examples/opentofu-real-stream.jsonl.
+
+The deployment class remains static and the deploy root remains dist/site.
+There is no service worker or browser storage; the landing page is not a PWA.
+Generated reviewer artifacts are self-contained and can be opened offline.
+
+## Known gap
+
+The researched source-of-truth .factory/brief.json is absent from the
+repository, as in the verifier candidate. It was not recreated or guessed.
+The implementation follows the verifier acceptance contract and preserves the
+existing local-first portable evidence reader.

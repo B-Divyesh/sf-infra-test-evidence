@@ -28,6 +28,22 @@ describe('release CLI conversion', () => {
     expect(() => execFileSync('cargo', ['run', '--quiet', '--locked', '--', '--json', 'examples/does-not-exist.json'], { cwd: root, encoding: 'utf8' })).toThrow();
   });
 
+  it('keeps real-style sensitive diagnostics out of every reviewer artifact', () => {
+    const output = mkdtempSync(join(tmpdir(), 'infra-test-evidence-real-'));
+    const evidence = join(output, 'evidence');
+    try {
+      execFileSync('cargo', ['run', '--quiet', '--locked', '--', '--evidence-dir', evidence, 'examples/opentofu-real-stream.jsonl'], { cwd: root, encoding: 'utf8' });
+      const artifact = readFileSync(join(evidence, 'evidence.json'), 'utf8');
+      const page = readFileSync(join(evidence, 'index.html'), 'utf8');
+      expect(artifact).not.toContain('s3cr3t-sentinel');
+      expect(page).not.toContain('s3cr3t-sentinel');
+      expect(artifact).toContain('[REDACTED SENSITIVE DIAGNOSTIC]');
+      expect(artifact).toContain('var.environment');
+    } finally {
+      rmSync(output, { recursive: true, force: true });
+    }
+  });
+
   it('rejects incomplete output options with a usage error', () => {
     try {
       execFileSync('cargo', ['run', '--quiet', '--locked', '--', '--junit'], { cwd: root, encoding: 'utf8', stdio: 'pipe' });

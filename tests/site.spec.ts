@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 test('loads a sample evidence report without console errors', async ({ page }) => {
   const errors: string[] = [];
@@ -28,4 +33,19 @@ test('publishes policy documents and exposes a visible file focus ring', async (
   await page.goto('/');
   await page.locator('#evidence-file').focus();
   await expect(page.locator('.drop-zone')).toHaveCSS('outline-style', 'solid');
+});
+
+test('generated reviewer evidence has keyboard-scrollable regions and no serious axe findings', async ({ page }) => {
+  const output = mkdtempSync(join(tmpdir(), 'infra-test-evidence-artifact-'));
+  try {
+    execFileSync('cargo', ['run', '--quiet', '--locked', '--', '--evidence-dir', output, 'examples/opentofu-real-stream.jsonl'], { encoding: 'utf8' });
+    await page.goto(pathToFileURL(join(output, 'index.html')).href);
+    await expect(page.locator('pre[tabindex="0"]')).toHaveCount(6);
+    await page.locator('#provenance').focus();
+    await expect(page.locator('#provenance')).toBeFocused();
+    const scan = await new AxeBuilder({ page: page as never }).analyze();
+    expect(scan.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? '')).map((violation) => violation.id)).toEqual([]);
+  } finally {
+    rmSync(output, { recursive: true, force: true });
+  }
 });

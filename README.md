@@ -78,3 +78,12 @@ assets. No analytics, remote fonts, CDNs, browser storage, or uploads are used.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Evidence safety
+
+The converter fails closed: an event stream must finish with one supported test
+summary, every completed run must use a supported status, and negative
+durations are rejected. Test-plan variables, outputs, resource changes, and
+assertion traversals are correlated with their test run before redacted
+reviewer evidence is written. A sensitive diagnostic is redacted as a whole,
+so an unlabelled value in a diagnostic diff cannot escape the artifact.
