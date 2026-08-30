@@ -108,6 +108,16 @@ test('supports keyboard navigation, visible focus, reduced motion, and 200% text
     .filter(({ box }) => box.width < 44 || box.height < 44));
   expect(undersizedTargets).toEqual([]);
 
+  await page.goto('/demo/');
+  const undersizedDemoTargets = await page.locator('a, button').evaluateAll((elements) => elements
+    .filter((element) => {
+      const style = getComputedStyle(element);
+      return style.visibility !== 'hidden' && style.display !== 'none';
+    })
+    .map((element) => ({ label: element.textContent?.trim(), box: element.getBoundingClientRect().toJSON() }))
+    .filter(({ box }) => box.width < 44 || box.height < 44));
+  expect(undersizedDemoTargets).toEqual([]);
+
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });

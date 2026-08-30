@@ -4,6 +4,7 @@
 
 - Make every Playwright claim command build its own production site from a clean checkout.
 - Prove the converter never launches infrastructure tools or opens a network socket.
+- Keep both demo-banner controls at least 44 px tall and cover them in browser QA.
 
 ## 0.1.0
 
