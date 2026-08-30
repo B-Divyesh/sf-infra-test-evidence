@@ -74,7 +74,9 @@ and at least one check with a non-empty `name` and supported `status` (`pass`,
 
 The converter exits 0 for valid input, 2 for invalid input or output failures,
 and 64 for incorrect usage. `--help` documents every option. `--json` prints a
-machine-readable validation result for either supported input form.
+machine-readable validation result for either supported input form. The CLI
+only reads existing test output. It never invokes OpenTofu or Terraform and
+never contacts remote state or another service.
 
 ## Develop, test, and deploy
 

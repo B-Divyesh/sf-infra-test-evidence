@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -108,6 +108,45 @@ describe('release CLI conversion', () => {
     const usage = spawnSync(releaseCli, ['--demo', '--json'], { cwd: root, encoding: 'utf8' });
     expect(usage.status).toBe(64);
     expect(usage.stderr).toContain('--demo cannot be combined');
+  });
+
+  it('@claim:conversion-only never launches infrastructure tools or opens a network socket', () => {
+    if (process.platform !== 'linux') throw new Error('The conversion-only claim sandbox requires Linux syscall interposition.');
+    const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-isolation-'));
+    const guard = join(sandbox, 'no-external-effects.so');
+    const log = join(sandbox, 'blocked-effect.log');
+    const fakeBin = join(sandbox, 'bin');
+    const junit = join(sandbox, 'report.xml');
+    const evidence = join(sandbox, 'evidence');
+    try {
+      execFileSync('cc', ['-shared', '-fPIC', '-Wall', '-Werror', '-o', guard, join(root, 'tests/fixtures/no-external-effects.c')], { cwd: root, encoding: 'utf8' });
+      mkdirSync(fakeBin);
+      for (const command of ['tofu', 'terraform']) {
+        const executable = join(fakeBin, command);
+        writeFileSync(executable, '#!/bin/sh\nprintf "%s\\n" "infrastructure command launched" >> "$ITE_SIDE_EFFECT_LOG"\nexit 191\n');
+        chmodSync(executable, 0o755);
+      }
+
+      const result = spawnSync(releaseCli, ['--json', '--junit', junit, '--evidence-dir', evidence, 'examples/opentofu-real-stream.jsonl'], {
+        cwd: root,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: fakeBin,
+          LD_PRELOAD: guard,
+          ITE_SIDE_EFFECT_LOG: log,
+        },
+      });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({ valid: true, checks: 2, errors: [] });
+      expect(existsSync(junit)).toBe(true);
+      expect(existsSync(join(evidence, 'evidence.json'))).toBe(true);
+      expect(existsSync(join(evidence, 'index.html'))).toBe(true);
+      expect(existsSync(log)).toBe(false);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   });
 
   it('fails closed for an unreadable input', () => {

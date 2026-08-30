@@ -35,6 +35,11 @@ describe('release claims contract', () => {
     expect(readFileSync('404.html', 'utf8')).toContain('<title>Page not found — Infra Test Evidence</title>');
   });
 
+  it('builds the production site before every browser claim run', () => {
+    const config = readFileSync('playwright.config.ts', 'utf8');
+    expect(config).toContain("command: 'npm run build:site && npm run preview'");
+  });
+
   it('@claim:mit-license keeps package metadata and the shipped license on MIT', () => {
     const cargo = readFileSync('Cargo.toml', 'utf8');
     const license = readFileSync('LICENSE', 'utf8');

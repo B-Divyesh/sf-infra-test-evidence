@@ -35,6 +35,13 @@
     "sandbox": "valid sample, invalid record, and incorrect usage in a clean CLI process"
   },
   {
+    "id": "conversion-only",
+    "claim": "The CLI only converts existing test output; it does not invoke OpenTofu or Terraform or contact remote services.",
+    "where": "landing page boundaries and README conversion section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:conversion-only'",
+    "sandbox": "packaged CLI in an isolated Linux process; a preload guard terminates and records any child-process or network-socket call; instrumented tofu and terraform commands are first on PATH"
+  },
+  {
     "id": "artifact-private",
     "claim": "The generated reviewer page works from disk without network requests.",
     "where": "README conversion section",

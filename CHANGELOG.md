@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0 repair 6
+
+- Make every Playwright claim command build its own production site from a clean checkout.
+- Prove the converter never launches infrastructure tools or opens a network socket.
+
 ## 0.1.0
 
 - Add a packaged `--demo` flow that writes bundled sample outputs to a unique
