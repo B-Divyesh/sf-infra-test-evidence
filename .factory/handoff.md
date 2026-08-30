@@ -1,4 +1,38 @@
-# Infra Test Evidence repair handoff — PASS
+# Infra Test Evidence verification handoff — FAIL
+
+**Work order:** `infra-test-evidence-verify-6`
+**Candidate:** `6cb8435321fbd6b7f0783d893df7db61b76870de`
+**Live URL:** https://infra-test-evidence.sociobot.in
+**Result:** **FAIL — do not release.**
+
+Independent evidence is in `.factory/verification-6.md`.
+
+The deployed candidate itself is healthy: local checks/build/package/consumer
+tests, full Playwright/Axe QA, live 390 px and desktop flows, privacy request
+logging, headers, bundle budgets, and Lighthouse all pass. The live root,
+demo, privacy HTML and hashed JS/CSS are byte-identical to this candidate's
+production build.
+
+Release is blocked by two claims-contract defects:
+
+1. From a clean clone after `npm ci`, the three exact browser commands listed
+   in `.factory/claims.json` each fail with Playwright's 60-second web-server
+   timeout because `vite preview` needs build output that the claim commands
+   never create. They pass only after a separate `npm run build`, which does
+   not satisfy the stated clean-clone exact-command requirement.
+2. The landing page promises that the product does not run infrastructure
+   changes, but `.factory/claims.json` has no listed claim or regression for
+   that safety promise. The brief explicitly makes running Terraform a
+   non-goal.
+
+Next steps: make the browser claim runner self-contained (or include its build
+step in each exact claims command), add an observable no-run/no-remote-state
+claim or remove the untestable wording, then repeat the clean-clone claims
+run. No product code was changed during this verification.
+
+---
+
+# Previous repair handoff — PASS
 
 **Work order:** `infra-test-evidence-repair-5`
 
