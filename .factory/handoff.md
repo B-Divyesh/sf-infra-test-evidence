@@ -59,8 +59,8 @@ npm run qa:a11y
 - All 10 exact commands in `.factory/claims.json` passed independently. The
   browser commands were proven self-contained from missing build output.
 - Clippy passed with warnings denied; Rust formatting is clean.
-- `cargo package` verified 51 files at 285.8 KiB (82.8 KiB compressed).
-  `npm pack --dry-run` verified 47 files at 59.3 kB (186.7 kB unpacked).
+- `cargo package` verified 51 files at 284.2 KiB (82.5 KiB compressed).
+  `npm pack --dry-run` verified 47 files at 58.8 kB (185.1 kB unpacked).
   Registry publication was not attempted.
 - The clean consumer command returned
   `{"checks":2,"errors":[],"valid":true}`.
