@@ -7,6 +7,7 @@ const result = document.querySelector<HTMLElement>('#result')!;
 const error = document.querySelector<HTMLElement>('#file-error')!;
 const status = document.querySelector<HTMLOutputElement>('#status')!;
 const dropZone = document.querySelector<HTMLElement>('.drop-zone')!;
+const resetDemo = document.querySelector<HTMLButtonElement>('#reset-demo');
 
 function text(value: unknown, fallback = 'Not recorded'): string { return typeof value === 'string' && value.trim() ? value : fallback; }
 function escapeHtml(value: string): string { const node = document.createElement('span'); node.textContent = value; return node.innerHTML; }
@@ -25,4 +26,5 @@ fileInput.addEventListener('change', () => { const file = fileInput.files?.[0]; 
 dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('dragging'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
 dropZone.addEventListener('drop', (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); const file = event.dataTransfer?.files[0]; if (file) void readFile(file); });
-document.querySelector<HTMLButtonElement>('#load-example')!.addEventListener('click', () => render(sample));
+resetDemo?.addEventListener('click', () => render(sample));
+if (document.body.dataset.mode === 'demo') render(sample);

@@ -3,27 +3,52 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Inspect portable infrastructure test evidence locally, without uploading a report." />
+    <meta name="description" content="Convert infrastructure test runs into JUnit and redacted evidence that reviewers can inspect locally." />
+    <link rel="canonical" href="https://infra-test-evidence.sociobot.in/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <title>Infra Test Evidence — local evidence reader</title>
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Infra Test Evidence — review test runs locally" />
+    <meta property="og:description" content="Convert infrastructure test runs into JUnit and redacted evidence for review." />
+    <meta property="og:url" content="https://infra-test-evidence.sociobot.in/" />
+    <meta property="og:image" content="https://infra-test-evidence.sociobot.in/social-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Infra Test Evidence — review test runs locally" />
+    <meta name="twitter:description" content="Convert infrastructure test runs into JUnit and redacted evidence for review." />
+    <meta name="twitter:image" content="https://infra-test-evidence.sociobot.in/social-card.png" />
+    <meta name="theme-color" content="#f7f2e9" />
+    <title>Infra Test Evidence — review test runs locally</title>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to evidence reader</a>
     <header class="masthead">
       <a class="wordmark" href="/" aria-label="ITE — Infra Test Evidence home">ITE<span>•</span></a>
-      <nav aria-label="Primary"><a href="#format">Record format</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a></nav>
+      <nav aria-label="Primary"><a href="/demo/">Demo</a><a href="#how">How it works</a><a href="/privacy/">Privacy</a></nav>
     </header>
     <main id="main">
       <section class="intro" aria-labelledby="page-title">
-        <p class="eyebrow">Portable proof, locally read</p>
-        <h1 id="page-title">Turn a test run into evidence someone can inspect.</h1>
-        <p class="lede">Drop a portable evidence record below. It stays in this browser. In CI, the companion CLI turns OpenTofu or Terraform test JSON into JUnit and a redacted static evidence page.</p>
+        <p class="eyebrow">Infrastructure test evidence</p>
+        <h1 id="page-title">Turn infrastructure tests into reviewable evidence</h1>
+        <p class="lede">For infrastructure-module maintainers who need reviewers to inspect failed OpenTofu or Terraform tests without uploading logs.</p>
+        <div class="hero-actions"><a class="primary-action" href="/demo/">Try it with sample data</a><a class="secondary-action" href="#reader-title">Open your evidence file</a><span>See two example checks in the browser reader.</span></div>
+        <ul class="hero-facts" aria-label="Product facts"><li>Runs in your browser</li><li>No trackers or uploads</li><li>Free under the MIT License</li></ul>
       </section>
       <section class="reader" aria-labelledby="reader-title">
         <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a record</h2></div><output id="status" class="status" aria-live="polite">Waiting for evidence</output></div>
         <label class="drop-zone" for="evidence-file"><span class="drop-mark" aria-hidden="true">↓</span><span><strong>Choose a JSON evidence file</strong><small>or drag it here · nothing is uploaded</small></span><input id="evidence-file" type="file" accept="application/json,.json" /></label>
         <p class="file-error" id="file-error" role="alert" hidden></p>
-        <div id="result" class="result empty" aria-live="polite"><p>Start with the included example or select your own record.</p><button id="load-example" class="text-button" type="button">Load a sample report</button></div>
+        <div id="result" class="result empty" aria-live="polite"><p>Your run details and checks will appear here.</p><a class="text-button" href="/demo/">Try it with sample data</a></div>
+      </section>
+      <section id="how" class="how" aria-labelledby="how-title">
+        <p class="eyebrow">Three local steps</p>
+        <h2 id="how-title">How it works</h2>
+        <ol class="steps">
+          <li><strong>Capture the run.</strong><span>Save OpenTofu or Terraform <code>test -json</code> output.</span></li>
+          <li><strong>Convert the evidence.</strong><span>Create JUnit, reviewer JSON, and a static HTML page.</span></li>
+          <li><strong>Review the result.</strong><span>Open the redacted page from disk or inspect a compact record above.</span></li>
+        </ol>
       </section>
       <section id="format" class="format" aria-labelledby="format-title"><p class="eyebrow">Small by design</p><h2 id="format-title">CI outputs and record format</h2><p>Run the converter against <code>tofu test -json</code> or <code>terraform test -json</code> output to create a JUnit report and a self-contained reviewer page. The page includes test inputs, assertion paths, redacted plan changes, failures, and provenance.</p><pre tabindex="0" aria-label="CLI conversion command"><code>infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl</code></pre><p>The local reader also accepts the compact portable record used by earlier workflows:</p><pre tabindex="0" aria-label="Example portable evidence JSON"><code>{
   "run": "staging-2026-08-27.1",
@@ -31,8 +56,9 @@
   "recordedAt": "2026-08-27T12:00:00Z",
   "checks": [{ "name": "HTTP health", "status": "pass" }]
 }</code></pre><p>Use <code>infra-test-evidence --json evidence.json</code> to strictly validate this compact form in CI.</p></section>
+      <section class="limits" aria-labelledby="limits-title"><p class="eyebrow">Boundaries</p><h2 id="limits-title">What it does not do</h2><p>It does not upload files, run infrastructure changes, or replace a reviewer. It only converts and displays the evidence you provide.</p><p><a href="/privacy/">Read the privacy details</a>.</p></section>
     </main>
-    <footer><span>Infra Test Evidence 0.1.0</span><span>Local-first. No trackers. No uploads.</span></footer>
+    <footer><span>Infra Test Evidence turns test runs into reviewer evidence.</span><span><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · Built by Param Factory · v0.1.0</span></footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

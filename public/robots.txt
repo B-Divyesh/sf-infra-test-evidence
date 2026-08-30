@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://infra-test-evidence.sociobot.in/sitemap.xml

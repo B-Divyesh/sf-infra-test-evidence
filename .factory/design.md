@@ -35,6 +35,9 @@ transitions are effectively instant. There is no looping or decorative motion.
 
 ## Asset provenance
 
-There are no images, icon fonts, remote fonts, trackers, or generated assets.
-The down arrow and ledger marks are hand-authored text/CSS, keeping this local
-utility fast and auditable.
+The interface uses no icon fonts, remote fonts, trackers, or generated assets.
+The down arrow and ledger marks are hand-authored text/CSS. The social card is
+a hand-authored SVG ledger illustration, converted locally to PNG for preview
+compatibility. The apple-touch icon is rendered locally from the original SVG
+favicon. Both assets are original work for this product and use the palette
+above; no third-party source or model was used.

@@ -1,10 +1,18 @@
 //! Local OpenTofu/Terraform test evidence converter.
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeMap, env, fs, path::Path, process};
+use std::{
+    collections::BTreeMap,
+    env, fs,
+    io::ErrorKind,
+    path::{Path, PathBuf},
+    process,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 const VERSION: &str = "0.1.0";
-const USAGE: &str = "infra-test-evidence 0.1.0\n\nUsage:\n  infra-test-evidence [--json] [--junit <report.xml>] [--evidence-dir <directory>] <terraform-test.jsonl>\n\nReads strict JSON or complete OpenTofu/Terraform test JSON event streams.\n\nOptions:\n  --json                    Print a machine-readable validation summary\n  --junit <report.xml>      Write a JUnit XML test report\n  --evidence-dir <dir>      Write index.html and evidence.json for reviewers\n  -h, --help                Show this help\n\nExit 0 is valid, 2 is invalid/unreadable input or output failure, and 64 is incorrect usage.";
+const USAGE: &str = "infra-test-evidence 0.1.0\n\nUsage:\n  infra-test-evidence [--json] [--junit <report.xml>] [--evidence-dir <directory>] <terraform-test.jsonl>\n  infra-test-evidence --demo\n\nReads strict JSON or complete OpenTofu/Terraform test JSON event streams.\n\nOptions:\n  --demo                    Run the bundled sample in a new temporary directory\n  --json                    Print a machine-readable validation summary\n  --junit <report.xml>      Write a JUnit XML test report\n  --evidence-dir <dir>      Write index.html and evidence.json for reviewers\n  -h, --help                Show this help\n\nExit 0 is valid, 2 is invalid/unreadable input or output failure, and 64 is incorrect usage.";
+const DEMO_FIXTURE: &str = include_str!("../examples/tofu-test.jsonl");
 #[derive(Clone, Debug, PartialEq)]
 struct Case {
     name: String,
@@ -759,7 +767,64 @@ fn print(json_output: bool, report: &Result<Report, Vec<String>>, path: &str) {
         Err(errors) => eprintln!("Invalid evidence in {path}: {}.", errors.join("; ")),
     }
 }
+
+fn create_demo_directory() -> Result<PathBuf, String> {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| format!("cannot create a unique demo directory: {error}"))?
+        .as_nanos();
+    for attempt in 0..100 {
+        let path = env::temp_dir().join(format!(
+            "infra-test-evidence-demo-{}-{timestamp}-{attempt}",
+            process::id()
+        ));
+        match fs::create_dir(&path) {
+            Ok(()) => return Ok(path),
+            Err(error) if error.kind() == ErrorKind::AlreadyExists => continue,
+            Err(error) => {
+                return Err(format!(
+                    "cannot create demo directory {}: {error}",
+                    path.display()
+                ));
+            }
+        }
+    }
+    Err("cannot create a unique demo directory after 100 attempts".to_owned())
+}
+
+fn run_demo() -> Result<(), String> {
+    let directory = create_demo_directory()?;
+    let sample_path = directory.join("tofu-test.jsonl");
+    let junit_path = directory.join("report.xml");
+    let evidence_dir = directory.join("evidence");
+    fs::write(&sample_path, DEMO_FIXTURE).map_err(|error| {
+        format!(
+            "cannot write bundled sample {}: {error}",
+            sample_path.display()
+        )
+    })?;
+    let report = parse(DEMO_FIXTURE)
+        .map_err(|errors| format!("bundled sample is invalid: {}", errors.join("; ")))?;
+    let junit_output = junit_path.to_string_lossy().into_owned();
+    let evidence_output = evidence_dir.to_string_lossy().into_owned();
+    output(&report, Some(&junit_output), Some(&evidence_output))?;
+    println!("Demo complete: {} checks converted", report.cases.len());
+    println!("Demo directory: {}", directory.display());
+    println!("Sample input: {}", sample_path.display());
+    println!("JUnit report: {}", junit_path.display());
+    println!(
+        "Reviewer page: {}",
+        evidence_dir.join("index.html").display()
+    );
+    println!(
+        "Evidence JSON: {}",
+        evidence_dir.join("evidence.json").display()
+    );
+    Ok(())
+}
+
 fn main() {
+    let mut demo = false;
     let mut json_output = false;
     let mut junit_path = None;
     let mut evidence_dir = None;
@@ -771,6 +836,7 @@ fn main() {
                 println!("{USAGE}");
                 return;
             }
+            "--demo" => demo = true,
             "--json" => json_output = true,
             "--junit" => match args.next() {
                 Some(path) if !path.starts_with('-') => junit_path = Some(path),
@@ -796,6 +862,17 @@ fn main() {
                 process::exit(64)
             }
         }
+    }
+    if demo {
+        if json_output || junit_path.is_some() || evidence_dir.is_some() || input_path.is_some() {
+            eprintln!("--demo cannot be combined with an input or output options\n\n{USAGE}");
+            process::exit(64)
+        }
+        if let Err(error) = run_demo() {
+            eprintln!("Demo failed: {error}.");
+            process::exit(2)
+        }
+        return;
     }
     let Some(path) = input_path else {
         eprintln!("{USAGE}");

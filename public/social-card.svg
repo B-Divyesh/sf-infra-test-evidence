@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Infra Test Evidence audit ledger</title>
+  <desc id="desc">A paper audit ledger with two checked infrastructure test rows.</desc>
+  <rect width="1200" height="630" fill="#f7f2e9"/>
+  <rect x="154" y="92" width="916" height="470" fill="#c8bda9"/>
+  <rect x="130" y="68" width="916" height="470" fill="#fffdf8" stroke="#193b58" stroke-width="8"/>
+  <rect x="130" y="68" width="54" height="470" fill="#b63f31"/>
+  <path d="M235 164h337M235 221h645M235 278h645M235 335h645M235 392h645M235 449h420" fill="none" stroke="#d9d1c2" stroke-width="8"/>
+  <path d="m914 204 18 18 38-48M914 318l18 18 38-48" fill="none" stroke="#28654c" stroke-linecap="square" stroke-width="14"/>
+  <path d="M235 125h520" fill="none" stroke="#193b58" stroke-width="18"/>
+  <circle cx="157" cy="141" r="9" fill="#f4c061"/>
+  <circle cx="157" cy="303" r="9" fill="#f4c061"/>
+  <circle cx="157" cy="465" r="9" fill="#f4c061"/>
+</svg>

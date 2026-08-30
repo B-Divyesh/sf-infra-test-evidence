@@ -1,0 +1,65 @@
+[
+  {
+    "id": "cli-demo",
+    "claim": "The CLI demo converts bundled sample data and prints paths to JUnit, JSON, and HTML outputs in a new temporary directory.",
+    "where": "README demo section and /demo",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:cli-demo'",
+    "sandbox": "fresh packaged CLI installation; isolated TMPDIR; no prepared input"
+  },
+  {
+    "id": "cli-conversion",
+    "claim": "The CLI converts OpenTofu or Terraform test JSON into JUnit and a static evidence page with reviewer details and provenance.",
+    "where": "landing page and README conversion section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:cli-conversion'",
+    "sandbox": "bundled OpenTofu sample; fresh temporary output directory"
+  },
+  {
+    "id": "sensitive-redaction",
+    "claim": "Explicit sensitive values and resource identifiers are removed from every generated artifact.",
+    "where": "landing page and README conversion section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:sensitive-redaction'",
+    "sandbox": "packaged CLI; explicit-sensitive fixture with opaque sentinels; scan JUnit, JSON, and HTML"
+  },
+  {
+    "id": "sensitivity-fail-closed",
+    "claim": "Malformed sensitivity metadata is rejected without producing reviewer artifacts.",
+    "where": "README conversion section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:sensitivity-fail-closed'",
+    "sandbox": "temporary malformed Terraform event stream and empty output paths"
+  },
+  {
+    "id": "strict-validation",
+    "claim": "Compact records are strictly validated and return documented process exit codes.",
+    "where": "README validation section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:strict-validation'",
+    "sandbox": "valid sample, invalid record, and incorrect usage in a clean CLI process"
+  },
+  {
+    "id": "artifact-private",
+    "claim": "The generated reviewer page works from disk without network requests.",
+    "where": "README conversion section",
+    "test": "npm run qa:browser -- --grep '@claim:artifact-private'",
+    "sandbox": "generated reviewer page opened from file URL with browser requests recorded"
+  },
+  {
+    "id": "reader-private",
+    "claim": "The browser reader uses no analytics, remote assets, storage, or uploads.",
+    "where": "landing facts, file picker, privacy page, footer, and README",
+    "test": "npm run qa:browser -- --grep '@claim:reader-private'",
+    "sandbox": "fresh browser context; demo load plus local file selection; record requests, cookies, and browser storage"
+  },
+  {
+    "id": "site-demo",
+    "claim": "The first-screen demo opens realistic sample data, resets it, and exits to the real reader.",
+    "where": "landing primary action, /demo banner, and .factory/demo.md",
+    "test": "npm run qa:browser -- --grep '@claim:site-demo'",
+    "sandbox": "fresh browser context entered from the landing primary action"
+  },
+  {
+    "id": "mit-license",
+    "claim": "Infra Test Evidence is free under the MIT License.",
+    "where": "landing facts and README",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:mit-license'",
+    "sandbox": "repository package metadata and LICENSE from a clean checkout"
+  }
+]

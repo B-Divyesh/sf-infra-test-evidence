@@ -1,20 +1,23 @@
 # Infra Test Evidence
 
 Infra Test Evidence converts local OpenTofu or Terraform `test -json` output
-into a standards-compatible JUnit report and a redacted static evidence page.
-It is for module maintainers who need a reviewer to inspect failed IaC tests
-without uploading logs or plans to another service.
+into a JUnit report and a redacted static evidence page. It is for
+infrastructure-module maintainers who need reviewers to inspect failed tests
+without uploading logs or plans.
 
 The companion landing page is https://infra-test-evidence.sociobot.in. It is a
-local-only reader for the compact evidence record used by older workflows.
+local reader for the compact evidence record used by older workflows. Open
+https://infra-test-evidence.sociobot.in/demo/ to try it with sample data.
 
 ## Install
 
+Install the CLI from a checkout:
+
 ```sh
-cargo install infra-test-evidence
+cargo install --path . --locked
 ```
 
-Or build it from a checkout:
+Or build it without installing:
 
 ```sh
 cargo build --release --locked
@@ -35,15 +38,26 @@ infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl
 contains `index.html` and `evidence.json`; open `evidence/index.html` directly
 or serve that directory statically. It records test-case inputs, assertion
 paths where emitted by the runner, redacted plan-change summaries, failures,
-and source provenance (including the input SHA-256). It never sends data over
-the network.
+and source provenance, including the input SHA-256. The reviewer page works
+from disk and makes no network requests.
 
 Secret- and resource-identifier-named fields are recursively redacted before
 they reach the evidence artifact. Explicit OpenTofu/Terraform `sensitive: true`
 values and `before_sensitive`, `after_sensitive`, and `sensitive_values` masks
-are also authoritative; malformed sensitivity metadata rejects the input
-instead of producing a shareable artifact. The source input is never copied to
-the artifact. See `examples/tofu-test.jsonl` for a complete sample.
+are also authoritative. Malformed sensitivity metadata rejects the input and
+does not produce reviewer artifacts. See `examples/tofu-test.jsonl` for a
+complete sample.
+
+## Try the bundled demo
+
+Run a realistic sample without preparing an input file:
+
+```sh
+infra-test-evidence --demo
+```
+
+The command writes the bundled sample, JUnit report, evidence JSON, and reviewer
+page to a new temporary directory. It prints every output path when complete.
 
 ## Strict validation and CI
 
@@ -76,7 +90,8 @@ npm run package:check    # cargo package and npm pack dry run
 
 Deploy `dist/site/` as a static site. The emitted `staticwebapp.config.json`
 sets restrictive browser response policies and immutable caching for hashed
-assets. No analytics, remote fonts, CDNs, browser storage, or uploads are used.
+assets. The browser reader uses no analytics, remote fonts, CDNs, storage, or
+uploads.
 
 ## License
 
