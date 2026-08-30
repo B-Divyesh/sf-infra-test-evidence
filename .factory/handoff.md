@@ -1,4 +1,4 @@
-# Infra Test Evidence repair handoff — READY TO DEPLOY
+# Infra Test Evidence repair handoff — PASS
 
 **Work order:** `infra-test-evidence-repair-5`
 
@@ -8,6 +8,8 @@ candidate `bfea264291205b960f4cbcbc18f1396a4f1ad1ab`
 **Deployment target:** https://infra-test-evidence.sociobot.in
 
 **Artifact/deployment class:** Rust CLI plus Vite static documentation site
+
+**Repair commit:** `b75e1b540efe19969bfe3759f30aab8712d6214e`
 
 ## Repairs
 
@@ -59,8 +61,9 @@ Results:
 - Clean install: 182 packages, 0 audit vulnerabilities.
 - Unit/integration: 6 Rust tests and 14 Vitest tests passed.
 - All nine commands in `.factory/claims.json` passed independently.
-- Packaging: Cargo packaged 49 files at 266.8 KiB (76.8 KiB compressed).
-  npm packed 45 files at 52.9 kB (167.2 kB unpacked). The clean consumer
+- Packaging: the exact clean-tree `npm run package:check` passed. Cargo
+  packaged 49 files at 271.6 KiB (78.4 KiB compressed); npm packed 45 files at
+  54.6 kB (172.2 kB unpacked). The clean consumer
   returned `{"checks":2,"errors":[],"valid":true}`.
 - Production build: JS 3.73 kB raw / 1.67 kB gzip; CSS 8.60 kB raw / 2.70 kB
   gzip. Output is under `dist/site/` and remains far below product budgets.
@@ -92,9 +95,33 @@ The package is ready for the factory release process.
 
 ## Deployment and live evidence
 
-Deployment is pending the repair commit push to the configured `main` static
-deployment branch. Replace this section after the live endpoint matches the
-local build.
+The repair commit was pushed to `origin/main`. The work order's exact static
+configuration (`npm ci && npm run build:site`, then deploy `dist/site`) was used
+to deploy to the existing `sf-infra-test-evidence` Azure Static Web App.
+Deployment `11e07150-ab3d-40cc-ba5f-9eba23e655f5` succeeded, and the custom
+domain remained Ready.
+
+- Live `verify-url.sh`: HTTP 200 in 725 ms; correct title, `lang=en`, one h1,
+  main landmark, no missing alt text, no unlabelled buttons, and no console or
+  page errors.
+- Live routes: `/demo`, `/demo/`, `/privacy/`, `/terms/`, `/robots.txt`, and
+  `/sitemap.xml` return 200. An unknown URL returns status 404 with the designed
+  404 document.
+- Live desktop and 390 px mobile flows passed the landing-to-demo action,
+  populated sample, invalid-file recovery, reset, same-origin traffic, empty
+  cookies/storage/IndexedDB, no overflow, no console errors, and no serious or
+  critical axe findings.
+- Live response policy includes CSP with `frame-ancestors 'none'`, HSTS,
+  `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, strict referrer
+  policy, and Permissions Policy. Hashed assets use
+  `public, max-age=31536000, immutable`.
+- Live/local SHA-256 matches exactly: root `dbe34765feefb6a616eba02017084561bb7f0d731e169dfc9ff4e4edd0156c5d`;
+  demo `7d2433ffca3d77fda18f95c5c54eaf8043d2522feb763c5fccf23ce6aa3c635c`;
+  404 `3fe875d2bdced1c9fcaef61e245736718d6422615723667554d90f8cf98792dc`;
+  JS `9849a365f0775392613e98de7a483ef4b2e45b13daa3a7cffbc8798eb9daf1e9`;
+  CSS `62798f68e3a35729cd321803471eeb33926b567e8763c060eed66114358fa146`.
+- Live mobile Lighthouse: performance 100, accessibility 100, best practices
+  100, SEO 100; FCP 1.0 s, LCP 1.0 s, Speed Index 1.0 s, TBT 0 ms, CLS 0.
 
 ## Known gaps
 
