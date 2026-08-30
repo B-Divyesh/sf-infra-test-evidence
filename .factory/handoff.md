@@ -1,164 +1,128 @@
-# Infra Test Evidence verification handoff — FAIL
+# Infra Test Evidence repair handoff — PASS
 
-**Work order:** `infra-test-evidence-verify-6`
-**Candidate:** `6cb8435321fbd6b7f0783d893df7db61b76870de`
+**Work order:** `infra-test-evidence-repair-6`
+
+**Verifier report:** `dc6d2e2c26acb1640bd30a4e9b6b2de637768b86`
+
+**Rejected candidate:** `6cb8435321fbd6b7f0783d893df7db61b76870de`
+
+**Repair commits:** `16bd7ca532561a77950caab3b896f547fdea5345`,
+`c37275b73c8f0e5f858f5d0903d2b5fd076c68bb`
+
 **Live URL:** https://infra-test-evidence.sociobot.in
-**Result:** **FAIL — do not release.**
-
-Independent evidence is in `.factory/verification-6.md`.
-
-The deployed candidate itself is healthy: local checks/build/package/consumer
-tests, full Playwright/Axe QA, live 390 px and desktop flows, privacy request
-logging, headers, bundle budgets, and Lighthouse all pass. The live root,
-demo, privacy HTML and hashed JS/CSS are byte-identical to this candidate's
-production build.
-
-Release is blocked by two claims-contract defects:
-
-1. From a clean clone after `npm ci`, the three exact browser commands listed
-   in `.factory/claims.json` each fail with Playwright's 60-second web-server
-   timeout because `vite preview` needs build output that the claim commands
-   never create. They pass only after a separate `npm run build`, which does
-   not satisfy the stated clean-clone exact-command requirement.
-2. The landing page promises that the product does not run infrastructure
-   changes, but `.factory/claims.json` has no listed claim or regression for
-   that safety promise. The brief explicitly makes running Terraform a
-   non-goal.
-
-Next steps: make the browser claim runner self-contained (or include its build
-step in each exact claims command), add an observable no-run/no-remote-state
-claim or remove the untestable wording, then repeat the clean-clone claims
-run. No product code was changed during this verification.
-
----
-
-# Previous repair handoff — PASS
-
-**Work order:** `infra-test-evidence-repair-5`
-
-**Verifier report:** commit `72b092b6e09b08815ee6bdf5b6b6603119502692`,
-candidate `bfea264291205b960f4cbcbc18f1396a4f1ad1ab`
-
-**Deployment target:** https://infra-test-evidence.sociobot.in
 
 **Artifact/deployment class:** Rust CLI plus Vite static documentation site
 
-**Repair commit:** `b75e1b540efe19969bfe3759f30aab8712d6214e`
-
 ## Repairs
 
-All findings in `.factory/verification-5.md` were reproduced and repaired.
+Both release blockers in `.factory/verification-6.md` were reproduced and
+repaired without changing the CLI's accepted formats or generated artifacts.
 
-- Added `.factory/claims.json` with nine claims. Each claim has one exact
-  `@claim:<id>` regression and a documented clean sandbox.
-- Added `infra-test-evidence --demo`. The packaged binary runs the embedded
-  `examples/tofu-test.jsonl` fixture, creates a unique temporary directory,
-  writes JUnit plus JSON/HTML reviewer evidence, and prints every path.
-- Added the real `/demo/` page and `/demo` redirect. The first-screen action is
-  **Try it with sample data**. Demo data stays in memory; its persistent banner
-  provides **Reset demo** and **Start for real** controls.
-- Rewrote the first screen to identify infrastructure-module maintainers and
-  state the review job directly. Added the required three-step explanation and
-  product boundaries. `.factory/copy-audit.md` records sentence counts and
-  terminology; no visible sentence exceeds 22 words.
-- Added `robots.txt`, `sitemap.xml`, a designed `404.html`, and the Static Web
-  Apps 404 response override. Vite now builds separate demo, privacy, terms,
-  and 404 documents instead of relying on its development fallback.
-- Added canonical and social metadata, a hand-authored ledger social card, an
-  apple-touch icon, consistent headers/footers, stricter CSP, 44 px targets,
-  and 200% text reflow. Asset provenance is in `.factory/design.md`.
-- Preserved the prior explicit-sensitive redaction repair. The installed-package
-  regression still scans JUnit, JSON, and HTML for the opaque sentinel.
+1. From installed dependencies with no `dist/`, the old exact browser claim
+   command reproduced `Timed out waiting 60000ms from config.webServer`.
+   Playwright now runs `npm run build:site && npm run preview`, so every browser
+   claim creates and serves its own production build. A contract test protects
+   this configuration. Each of the three formerly failing exact commands was
+   rerun with `dist/` absent and passed in both desktop and 390 px projects.
+2. `.factory/claims.json` now lists `conversion-only` for the documented safety
+   boundary. Its exact regression packages and installs the CLI, places
+   instrumented `tofu` and `terraform` commands first on `PATH`, and runs the
+   converter with a Linux preload guard. Any child-process or network-socket
+   call writes a marker and terminates the CLI. Conversion returned exit 0,
+   wrote JUnit, JSON, and HTML, and created no marker.
 
-## Local verification
+The final live pass also exposed a demo-banner link below the 44 px touch
+minimum. The shared banner style now gives both controls a 44 px minimum
+height, and the desktop/mobile regression measures controls on `/demo/` as
+well as `/`.
 
-The following were run from this checkout on 2026-08-30 UTC:
+## Clean local verification
+
+The following passed on 2026-08-30 UTC:
 
 ```sh
 npm ci
-npm run lint
-npm run typecheck
-npm test
+npm run check
 cargo fmt --check
 cargo clippy --locked --all-targets -- -D warnings
 npm audit --audit-level=high
 npm run build
-cargo package --locked --allow-dirty
-npm pack --dry-run
+npm run package:check
 npm run consumer:check
 npm run qa:browser
 npm run qa:a11y
 ```
 
-Results:
+- Clean install added 182 packages and found 0 vulnerabilities.
+- `npm run check` passed ESLint, TypeScript, 6 Rust tests, and 16 Vitest
+  unit/integration tests.
+- All 10 exact commands in `.factory/claims.json` passed independently. The
+  browser commands were proven self-contained from missing build output.
+- Clippy passed with warnings denied; Rust formatting is clean.
+- `cargo package` verified 51 files at 285.8 KiB (82.8 KiB compressed).
+  `npm pack --dry-run` verified 47 files at 59.3 kB (186.7 kB unpacked).
+  Registry publication was not attempted.
+- The clean consumer command returned
+  `{"checks":2,"errors":[],"valid":true}`.
+- The final production build emitted 3.73 kB JS (1.67 kB gzip) and 8.64 kB
+  CSS (2.70 kB gzip), below the 200 kB JS and 50 kB CSS budgets.
+- Playwright passed 12/12 tests across desktop Chromium and a 390 px Chromium
+  project. Coverage includes the first-click sample, reset and exit, malformed
+  input recovery, keyboard order and focus, reduced motion, 200% text, 44 px
+  targets on landing and demo, no overflow, policy routes, the designed 404,
+  privacy storage/request checks, and file-URL reviewer evidence.
+- The Axe project passed 2/2. Root, demo, privacy, terms, and 404 were scanned
+  in light and dark mode with no serious or critical violations; each has one
+  `h1`, one `main`, `lang=en`, and its route-specific title.
+- Local mobile Lighthouse scored performance 100, accessibility 100, best
+  practices 100, and SEO 100. FCP and LCP were 0.9 s, TBT 0 ms, and CLS 0.
 
-- Clean install: 182 packages, 0 audit vulnerabilities.
-- Unit/integration: 6 Rust tests and 14 Vitest tests passed.
-- All nine commands in `.factory/claims.json` passed independently.
-- Packaging: the exact clean-tree `npm run package:check` passed. Cargo
-  packaged 49 files at 271.6 KiB (78.4 KiB compressed); npm packed 45 files at
-  54.6 kB (172.2 kB unpacked). The clean consumer
-  returned `{"checks":2,"errors":[],"valid":true}`.
-- Production build: JS 3.73 kB raw / 1.67 kB gzip; CSS 8.60 kB raw / 2.70 kB
-  gzip. Output is under `dist/site/` and remains far below product budgets.
-- Playwright: 12/12 desktop and 390 px mobile tests passed. These cover the
-  first-click demo, reset/exit, malformed-file recovery, exact static routes,
-  same-origin traffic, empty cookies/storage/IndexedDB, keyboard order, visible
-  focus, 44 px targets, reduced motion, 200% text reflow, and generated file
-  evidence opened without network access.
-- Axe: 2/2 project tests passed across `/`, `/demo/`, `/privacy/`, `/terms/`,
-  and `/404.html` in both light and dark modes. There were no serious or
-  critical findings.
-- `verify-url.sh` against the local production preview returned 200 with the
-  correct title, `lang=en`, one h1, a main landmark, no missing alt text, no
-  unlabelled buttons, and no console or page errors.
-- Local mobile Lighthouse: performance 100, accessibility 100, best practices
-  100, SEO 100; FCP 1.0 s, LCP 1.0 s, TBT 0 ms, CLS 0.
+## Privacy, offline, and update behavior
 
-## Privacy, offline, and release behavior
+Fresh browser contexts recorded only same-origin requests through sample use
+and local-file selection. Cookies, localStorage, sessionStorage, and IndexedDB
+remained empty. The site has no analytics, remote assets, account, upload
+endpoint, backend, payment, or AI feature.
 
-The site has no analytics, external scripts, remote fonts, cookies, browser
-storage, upload endpoint, account, backend, payment, or AI feature. The public
-reader does not claim PWA offline reload and has no service worker or update
-channel, so PWA offline/update tests do not apply. The generated reviewer page
-is self-contained and its file-URL offline behavior is covered by
-`@claim:artifact-private`.
-
-The factory owns registry publication; no crate or npm package was published.
-The package is ready for the factory release process.
+The generated reviewer page was opened from a `file:` URL and made no HTTP(S)
+requests. The public site does not claim PWA offline reload and ships no
+service worker or update channel, so no PWA update lifecycle applies.
 
 ## Deployment and live evidence
 
-The repair commit was pushed to `origin/main`. The work order's exact static
-configuration (`npm ci && npm run build:site`, then deploy `dist/site`) was used
-to deploy to the existing `sf-infra-test-evidence` Azure Static Web App.
-Deployment `11e07150-ab3d-40cc-ba5f-9eba23e655f5` succeeded, and the custom
-domain remained Ready.
+The work order's exact build command, `npm ci && npm run build:site`, produced
+`dist/site`. That directory was deployed to the existing
+`sf-infra-test-evidence` Azure Static Web App. Final deployment
+`10ea52ab-7a5b-41af-bdef-67448a8d27ef` succeeded; the custom domain is Ready.
 
-- Live `verify-url.sh`: HTTP 200 in 725 ms; correct title, `lang=en`, one h1,
-  main landmark, no missing alt text, no unlabelled buttons, and no console or
-  page errors.
-- Live routes: `/demo`, `/demo/`, `/privacy/`, `/terms/`, `/robots.txt`, and
-  `/sitemap.xml` return 200. An unknown URL returns status 404 with the designed
-  404 document.
-- Live desktop and 390 px mobile flows passed the landing-to-demo action,
-  populated sample, invalid-file recovery, reset, same-origin traffic, empty
-  cookies/storage/IndexedDB, no overflow, no console errors, and no serious or
-  critical axe findings.
+- `verify-url.sh` returned HTTP 200 in 585 ms with the correct title,
+  `lang=en`, one `h1`, a main landmark, no missing alt text, no unlabelled
+  buttons, and no console or page errors.
+- Separate live desktop and 390 px flows passed demo entry, malformed-input
+  recovery, reset, exit, keyboard skip navigation, no overflow, and 44 px
+  controls. All requests were same-origin; cookies and all browser storage
+  stayed empty.
+- Live Axe scans covered all five routes in light and dark at both viewports.
+  They found no serious or critical violations. Valid routes logged no browser
+  errors. An unknown route returned the designed page with HTTP 404.
 - Live response policy includes CSP with `frame-ancestors 'none'`, HSTS,
   `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, strict referrer
-  policy, and Permissions Policy. Hashed assets use
-  `public, max-age=31536000, immutable`.
-- Live/local SHA-256 matches exactly: root `dbe34765feefb6a616eba02017084561bb7f0d731e169dfc9ff4e4edd0156c5d`;
-  demo `7d2433ffca3d77fda18f95c5c54eaf8043d2522feb763c5fccf23ce6aa3c635c`;
-  404 `3fe875d2bdced1c9fcaef61e245736718d6422615723667554d90f8cf98792dc`;
+  policy, and restrictive Permissions Policy. Hashed assets return
+  `Cache-Control: public, max-age=31536000, immutable`; HTML uses 30-second
+  revalidation.
+- Live/local SHA-256 matches exactly: root
+  `7f2795144556013df7c7e8ecc4f6b4b2deca7910dd1dc94a6fd703387b2747a3`;
+  demo `155863167f2c443429b9c33998c303068ec8e4cd9ec66b1125207050977f565c`;
+  privacy `f0a51f5d23c88e55632b23858a6776a35a8e1d73951d369dfe585015e9d6f1fe`;
+  terms `5e12022b39c8ef72d7644b937d7bc624341a1d823ddb8560b78b6f4353d3c1b7`;
+  404 `5695390422f5346e58d5eb40bffd401a8b14d49f874148d2b1df13686e8c7083`;
   JS `9849a365f0775392613e98de7a483ef4b2e45b13daa3a7cffbc8798eb9daf1e9`;
-  CSS `62798f68e3a35729cd321803471eeb33926b567e8763c060eed66114358fa146`.
-- Live mobile Lighthouse: performance 100, accessibility 100, best practices
-  100, SEO 100; FCP 1.0 s, LCP 1.0 s, Speed Index 1.0 s, TBT 0 ms, CLS 0.
+  CSS `bdd692b1001dd3b529cb135241900dafa194ecea1ffcaaf697af11eb0cd1dcfc`.
+- Live mobile Lighthouse scored 100 in performance, accessibility, best
+  practices, and SEO; FCP and LCP were 0.8 s, TBT 0 ms, and CLS 0.
 
 ## Known gaps
 
-No `.factory/brief.json` exists in the supplied repository, so the preserved
-research context comes from the verifier reports, README, and design thesis.
-No known product or QA gap remains from verification 5.
+No `.factory/brief.json` exists in the supplied repository. Scope was
+preserved from the verifier reports, README, and `.factory/design.md`. No known
+release blocker remains from verification 6.
