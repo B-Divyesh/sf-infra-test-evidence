@@ -39,8 +39,11 @@ and source provenance (including the input SHA-256). It never sends data over
 the network.
 
 Secret- and resource-identifier-named fields are recursively redacted before
-they reach the evidence artifact. The source input is never copied to the
-artifact. See `examples/tofu-test.jsonl` for a complete sample.
+they reach the evidence artifact. Explicit OpenTofu/Terraform `sensitive: true`
+values and `before_sensitive`, `after_sensitive`, and `sensitive_values` masks
+are also authoritative; malformed sensitivity metadata rejects the input
+instead of producing a shareable artifact. The source input is never copied to
+the artifact. See `examples/tofu-test.jsonl` for a complete sample.
 
 ## Strict validation and CI
 

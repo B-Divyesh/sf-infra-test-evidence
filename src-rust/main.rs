@@ -88,45 +88,148 @@ fn redact_text(value: &str) -> String {
         value.to_owned()
     }
 }
-fn has_secret(value: &Value) -> bool {
+const REDACTED: &str = "[REDACTED]";
+
+/// OpenTofu and Terraform use both an inline `sensitive: true` wrapper and
+/// structural masks such as `after_sensitive` and `sensitive_values`. A
+/// marker is security metadata, not a hint: an unrecognised marker shape must
+/// stop conversion before a shareable artifact can be written.
+fn sensitivity_mask(value: &Value, label: &str) -> Result<(), String> {
     match value {
+        Value::Bool(_) => Ok(()),
+        Value::Array(values) => values
+            .iter()
+            .enumerate()
+            .try_for_each(|(index, value)| sensitivity_mask(value, &format!("{label}[{index}]"))),
         Value::Object(values) => values
             .iter()
-            .any(|(key, value)| secret(key) || has_secret(value)),
-        Value::Array(values) => values.iter().any(has_secret),
-        Value::String(value) => secret(value),
-        _ => false,
+            .try_for_each(|(key, value)| sensitivity_mask(value, &format!("{label}.{key}"))),
+        _ => Err(format!(
+            "cannot safely interpret sensitivity marker {label}; expected a boolean or a matching boolean mask"
+        )),
     }
 }
-fn redact(value: &Value, hint: Option<&str>) -> Value {
-    if hint.is_some_and(sensitive_key) {
-        return Value::String("[REDACTED]".to_owned());
+fn marker_for<'a>(values: &'a Map<String, Value>, key: &str) -> Option<(&'static str, &'a Value)> {
+    match key {
+        "before" => values
+            .get("before_sensitive")
+            .map(|value| ("before_sensitive", value)),
+        "after" => values
+            .get("after_sensitive")
+            .map(|value| ("after_sensitive", value)),
+        "values" => values
+            .get("sensitive_values")
+            .map(|value| ("sensitive_values", value)),
+        _ => None,
     }
-    match value {
-        Value::Object(values) => Value::Object(
+}
+fn redact_masked(value: &Value, mask: &Value, label: &str) -> Result<Value, String> {
+    match mask {
+        Value::Bool(true) => Ok(Value::String(REDACTED.to_owned())),
+        Value::Bool(false) => redact(value, None),
+        Value::Object(mask_values) => {
+            let Value::Object(values) = value else {
+                return Err(format!(
+                    "cannot safely apply sensitivity marker {label} to a non-object value"
+                ));
+            };
+            let mut redacted = Map::new();
+            for (key, child) in values {
+                let child = match mask_values.get(key) {
+                    Some(mask) => redact_masked(child, mask, &format!("{label}.{key}"))?,
+                    None => redact(child, Some(key))?,
+                };
+                redacted.insert(key.clone(), child);
+            }
+            for key in mask_values.keys() {
+                if !values.contains_key(key) {
+                    return Err(format!(
+                        "cannot safely apply sensitivity marker {label}; it names missing value {key}"
+                    ));
+                }
+            }
+            Ok(Value::Object(redacted))
+        }
+        Value::Array(masks) => {
+            let Value::Array(values) = value else {
+                return Err(format!(
+                    "cannot safely apply sensitivity marker {label} to a non-array value"
+                ));
+            };
+            if values.len() != masks.len() {
+                return Err(format!(
+                    "cannot safely apply sensitivity marker {label}; array lengths differ"
+                ));
+            }
             values
                 .iter()
-                .map(|(key, value)| (key.clone(), redact(value, Some(key))))
-                .collect(),
-        ),
-        Value::Array(values) => {
-            Value::Array(values.iter().map(|value| redact(value, None)).collect())
+                .zip(masks)
+                .enumerate()
+                .map(|(index, (value, mask))| {
+                    redact_masked(value, mask, &format!("{label}[{index}]"))
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .map(Value::Array)
         }
-        Value::String(value) => Value::String(redact_text(value)),
-        _ => value.clone(),
+        _ => Err(format!(
+            "cannot safely interpret sensitivity marker {label}; expected a boolean or a matching boolean mask"
+        )),
     }
 }
-fn compact(value: &Value) -> String {
-    serde_json::to_string(&redact(value, None)).unwrap_or_else(|_| "[unserializable]".to_owned())
+fn redact(value: &Value, hint: Option<&str>) -> Result<Value, String> {
+    if hint.is_some_and(sensitive_key) {
+        return Ok(Value::String(REDACTED.to_owned()));
+    }
+    match value {
+        Value::Object(values) => {
+            if let Some(marker) = values.get("sensitive") {
+                match marker {
+                    Value::Bool(true) => return Ok(Value::String(REDACTED.to_owned())),
+                    Value::Bool(false) => {}
+                    _ => {
+                        return Err("cannot safely interpret explicit sensitive marker; expected true or false".to_owned());
+                    }
+                }
+            }
+            for (key, marker) in values {
+                if ["before_sensitive", "after_sensitive", "sensitive_values"]
+                    .contains(&key.as_str())
+                {
+                    sensitivity_mask(marker, key)?;
+                }
+            }
+            let mut redacted = Map::new();
+            for (key, child) in values {
+                let child = match marker_for(values, key) {
+                    Some((label, marker)) => redact_masked(child, marker, label)?,
+                    None => redact(child, Some(key))?,
+                };
+                redacted.insert(key.clone(), child);
+            }
+            Ok(Value::Object(redacted))
+        }
+        Value::Array(values) => values
+            .iter()
+            .map(|value| redact(value, None))
+            .collect::<Result<Vec<_>, _>>()
+            .map(Value::Array),
+        Value::String(value) => Ok(Value::String(redact_text(value))),
+        _ => Ok(value.clone()),
+    }
 }
-fn diagnostic(value: &Value) -> String {
-    if has_secret(value) {
-        "[REDACTED SENSITIVE DIAGNOSTIC]".to_owned()
+fn compact(value: &Value) -> Result<String, String> {
+    serde_json::to_string(&redact(value, None)?)
+        .map_err(|_| "cannot serialize redacted diagnostic".to_owned())
+}
+fn diagnostic(value: &Value) -> Result<String, String> {
+    let redacted = redact(value, None)?;
+    if redacted != *value {
+        Ok("[REDACTED SENSITIVE DIAGNOSTIC]".to_owned())
     } else {
-        value
+        Ok(value
             .as_object()
             .and_then(|value| field(value, "detail").or_else(|| field(value, "summary")))
-            .unwrap_or_else(|| compact(value))
+            .unwrap_or(compact(value)?))
     }
 }
 fn duration(value: Option<f64>, label: &str, errors: &mut Vec<String>) -> Option<f64> {
@@ -215,6 +318,14 @@ fn event_value(
         field(event, key).or_else(|| payload.and_then(|payload| field(payload, key)))
     })
 }
+fn redacted_object(value: &Value, label: &str) -> Result<Map<String, Value>, String> {
+    match redact(value, None)? {
+        Value::Object(value) => Ok(value),
+        _ => Err(format!(
+            "cannot safely read {label}; an explicit sensitivity marker conceals required fields"
+        )),
+    }
+}
 fn key(event: &Map<String, Value>, payload: Option<&Map<String, Value>>) -> Option<String> {
     Some(format!(
         "{}::{}",
@@ -236,8 +347,12 @@ fn identity(
         .clone()
         .or_else(|| event_value(event, payload, &["@testrun", "run", "name"]));
 }
-fn paths(value: &Value) -> Vec<String> {
-    value
+fn paths(value: &Value) -> Result<Vec<String>, String> {
+    let redacted = redact(value, None)?;
+    if redacted != *value {
+        return Ok(vec!["[REDACTED SENSITIVE ASSERTION]".to_owned()]);
+    }
+    Ok(redacted
         .pointer("/snippet/values")
         .and_then(Value::as_array)
         .into_iter()
@@ -251,13 +366,13 @@ fn paths(value: &Value) -> Vec<String> {
                 value
             }
         })
-        .collect()
+        .collect())
 }
-fn plan(value: &Value, context: &mut Context) {
-    let redacted = redact(value, None);
+fn plan(value: &Value, context: &mut Context) -> Result<(), String> {
+    let redacted = redact(value, None)?;
     let Some(plan) = redacted.as_object() else {
         context.plans.push("test plan: [REDACTED]".to_owned());
-        return;
+        return Ok(());
     };
     for name in ["variables", "inputs", "outputs"] {
         if let Some(value) = plan.get(name) {
@@ -285,6 +400,7 @@ fn plan(value: &Value, context: &mut Context) {
         "test_plan={}",
         serde_json::to_string(&redacted).unwrap_or_else(|_| "[unserializable]".to_owned())
     ));
+    Ok(())
 }
 
 fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>> {
@@ -299,31 +415,50 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
             errors.push("every event must be a JSON object".to_owned());
             continue;
         };
+        if let Err(error) = redacted_object(value, "event") {
+            errors.push(error);
+            continue;
+        }
         let Some(kind) = field(event, "type") else {
             errors.push("every event needs a non-empty type".to_owned());
             continue;
         };
         match kind.as_str() {
             "test_plan" => {
-                let payload = event.get("test_plan").and_then(Value::as_object);
-                let Some(run_key) = key(event, payload) else {
+                let Some(raw_payload) = event.get("test_plan") else {
+                    errors.push("a test_plan event is missing its test_plan object".to_owned());
+                    continue;
+                };
+                let payload = match redacted_object(raw_payload, "test_plan") {
+                    Ok(payload) => payload,
+                    Err(error) => {
+                        errors.push(error);
+                        continue;
+                    }
+                };
+                let Some(run_key) = key(event, Some(&payload)) else {
                     errors.push("a test_plan event needs test file and run identity".to_owned());
                     continue;
                 };
                 let context = contexts.entry(run_key).or_default();
-                identity(context, event, payload);
-                if let Some(payload) = event.get("test_plan") {
-                    plan(payload, context);
-                } else {
-                    errors.push("a test_plan event is missing its test_plan object".to_owned());
+                identity(context, event, Some(&payload));
+                if let Err(error) = plan(&Value::Object(payload), context) {
+                    errors.push(error);
                 }
             }
             "test_run" => {
-                let Some(run) = event.get("test_run").and_then(Value::as_object) else {
+                let Some(raw_run) = event.get("test_run") else {
                     errors.push("a test_run event is missing its test_run object".to_owned());
                     continue;
                 };
-                let Some(raw) = field(run, "status") else {
+                let run = match redacted_object(raw_run, "test_run") {
+                    Ok(run) => run,
+                    Err(error) => {
+                        errors.push(error);
+                        continue;
+                    }
+                };
+                let Some(raw) = field(&run, "status") else {
                     errors.push("a test_run event needs a non-empty status".to_owned());
                     continue;
                 };
@@ -331,12 +466,12 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                     errors.push(format!("test_run has an unsupported status {raw}"));
                     continue;
                 };
-                let Some(run_key) = key(event, Some(run)) else {
+                let Some(run_key) = key(event, Some(&run)) else {
                     errors.push("a completed test_run needs test file and run identity".to_owned());
                     continue;
                 };
                 let context = contexts.entry(run_key.clone()).or_default();
-                identity(context, event, Some(run));
+                identity(context, event, Some(&run));
                 let elapsed = duration(
                     run.get("elapsed").and_then(Value::as_f64).or_else(|| {
                         run.get("duration_ms")
@@ -354,34 +489,50 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                         .unwrap_or_else(|| "terraform-test".to_owned()),
                     state,
                     elapsed,
-                    field(run, "error_message")
-                        .or_else(|| field(run, "message"))
+                    field(&run, "error_message")
+                        .or_else(|| field(&run, "message"))
                         .map(|v| redact_text(&v)),
                 ));
             }
             "diagnostic" => {
                 let item = event.get("diagnostic");
                 let payload = item.and_then(Value::as_object);
-                let rendered = item.map(diagnostic);
-                if let Some(rendered) = &rendered {
+                let rendered = match item.map(diagnostic).transpose() {
+                    Ok(rendered) => rendered,
+                    Err(error) => {
+                        errors.push(error);
+                        None
+                    }
+                };
+                if let Some(rendered) = rendered.as_ref() {
                     diagnostics.push(rendered.clone());
                 }
                 if let (Some(run_key), Some(item)) = (key(event, payload), item) {
                     let context = contexts.entry(run_key).or_default();
                     identity(context, event, payload);
-                    context.assertions.extend(paths(item));
+                    match paths(item) {
+                        Ok(paths) => context.assertions.extend(paths),
+                        Err(error) => errors.push(error),
+                    }
                     if let Some(rendered) = rendered {
                         context.diagnostics.push(rendered);
                     }
                 }
             }
             "test_summary" => {
-                let Some(item) = event.get("test_summary").and_then(Value::as_object) else {
+                let Some(raw_item) = event.get("test_summary") else {
                     errors
                         .push("a test_summary event is missing its test_summary object".to_owned());
                     continue;
                 };
-                let Some(raw) = field(item, "status") else {
+                let item = match redacted_object(raw_item, "test_summary") {
+                    Ok(item) => item,
+                    Err(error) => {
+                        errors.push(error);
+                        continue;
+                    }
+                };
+                let Some(raw) = field(&item, "status") else {
                     errors.push("a test_summary event needs a non-empty status".to_owned());
                     continue;
                 };
@@ -674,6 +825,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    const EXPLICIT_SENSITIVE_FIXTURE: &str =
+        include_str!("../examples/explicit-sensitive-output.jsonl");
     const FIXTURE: &str = include_str!("../examples/opentofu-real-stream.jsonl");
     #[test]
     fn legacy_is_strict() {
@@ -712,6 +865,60 @@ mod tests {
                 .plans
                 .iter()
                 .any(|value| value.starts_with("create:"))
+        );
+    }
+    #[test]
+    fn explicit_sensitive_values_and_terraform_masks_are_redacted() {
+        let report = parse(EXPLICIT_SENSITIVE_FIXTURE).unwrap();
+        let rendered = serde_json::to_string(&artifact(&report)).unwrap();
+        assert!(!rendered.contains("k9M2qV7xL4"));
+        assert!(rendered.contains(REDACTED));
+
+        let terraform_plan = json!({
+            "change": {
+                "after": {
+                    "password": "terraform-after-sentinel",
+                    "nested": { "token": "terraform-nested-sentinel" }
+                },
+                "after_sensitive": {
+                    "password": true,
+                    "nested": { "token": true }
+                }
+            },
+            "values": {
+                "private": "terraform-values-sentinel",
+                "public": "safe"
+            },
+            "sensitive_values": { "private": true }
+        });
+        let redacted = redact(&terraform_plan, None).unwrap();
+        let rendered = serde_json::to_string(&redacted).unwrap();
+        for sentinel in [
+            "terraform-after-sentinel",
+            "terraform-nested-sentinel",
+            "terraform-values-sentinel",
+        ] {
+            assert!(!rendered.contains(sentinel));
+        }
+        assert!(rendered.contains("safe"));
+    }
+    #[test]
+    fn malformed_sensitivity_markers_fail_closed() {
+        let malformed = r#"{"type":"test_plan","@testfile":"x","@testrun":"a","test_plan":{"outputs":{"session":{"sensitive":"unknown","value":"opaque"}}}}
+{"type":"test_run","@testfile":"x","@testrun":"a","test_run":{"status":"pass"}}
+{"type":"test_summary","test_summary":{"status":"pass"}}"#;
+        let errors = parse(malformed).unwrap_err();
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("cannot safely interpret explicit sensitive marker"))
+        );
+        assert!(
+            redact(
+                &json!({"after": {"value": "opaque"}, "after_sensitive": "unknown"}),
+                None
+            )
+            .is_err()
         );
     }
     #[test]

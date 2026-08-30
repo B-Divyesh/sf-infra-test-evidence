@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -7,6 +7,27 @@ import { describe, expect, it } from 'vitest';
 const root = process.cwd();
 
 describe('release CLI conversion', () => {
+  it('keeps explicitly sensitive opaque values out of every release-package artifact', () => {
+    const output = mkdtempSync(join(tmpdir(), 'infra-test-evidence-package-'));
+    const consumer = join(output, 'consumer');
+    const junit = join(output, 'report.xml');
+    const evidence = join(output, 'evidence');
+    const sentinel = 'k9M2qV7xL4';
+    try {
+      execFileSync('cargo', ['package', '--locked', '--allow-dirty'], { cwd: root, encoding: 'utf8' });
+      execFileSync('cargo', ['install', '--path', join(root, 'target/package/infra-test-evidence-0.1.0'), '--root', consumer, '--locked'], { cwd: root, encoding: 'utf8' });
+      const result = execFileSync(join(consumer, 'bin/infra-test-evidence'), ['--json', '--junit', junit, '--evidence-dir', evidence, 'examples/explicit-sensitive-output.jsonl'], { cwd: root, encoding: 'utf8' });
+      expect(JSON.parse(result)).toEqual({ valid: true, checks: 1, errors: [] });
+
+      const generated = [junit, ...readdirSync(evidence, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => join(evidence, entry.name))];
+      expect(generated).toHaveLength(3);
+      for (const artifact of generated) expect(readFileSync(artifact, 'utf8')).not.toContain(sentinel);
+      expect(readFileSync(join(evidence, 'evidence.json'), 'utf8')).toContain('[REDACTED]');
+    } finally {
+      rmSync(output, { recursive: true, force: true });
+    }
+  }, 60_000);
+
   it('writes JUnit and a redacted, self-contained reviewer artifact', () => {
     const output = mkdtempSync(join(tmpdir(), 'infra-test-evidence-'));
     const junit = join(output, 'report.xml');

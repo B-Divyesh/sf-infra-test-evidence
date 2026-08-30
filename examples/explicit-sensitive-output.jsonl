@@ -1,0 +1,3 @@
+{"type":"test_plan","@testfile":"tests/sensitive.tftest.hcl","@testrun":"explicit_sensitive_output","test_plan":{"outputs":{"session":{"sensitive":true,"value":"k9M2qV7xL4"}},"resource_changes":[]}}
+{"type":"test_run","@testfile":"tests/sensitive.tftest.hcl","@testrun":"explicit_sensitive_output","test_run":{"status":"pass","elapsed":0}}
+{"type":"test_summary","test_summary":{"status":"pass"}}
