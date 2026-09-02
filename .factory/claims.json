@@ -15,7 +15,7 @@
   },
   {
     "id": "cli-conversion",
-    "claim": "The CLI converts OpenTofu or Terraform test JSON into JUnit and a static evidence page with reviewer details and provenance.",
+    "claim": "The CLI converts OpenTofu or Terraform test JSON into JUnit and a reviewer page with reviewer details and provenance.",
     "where": "landing page and README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:cli-conversion'",
     "sandbox": "bundled OpenTofu sample; fresh temporary output directory"
@@ -92,10 +92,31 @@
   },
   {
     "id": "site-demo",
-    "claim": "The first-screen demo opens realistic sample data, resets it, and exits to the real reader.",
+    "claim": "The first-screen demo opens a failed OpenTofu sample with redaction, provenance, and output files, then resets and exits to the real reader.",
     "where": "landing primary action, /demo banner, and .factory/demo.md",
     "test": "npm run qa:browser -- --grep '@claim:site-demo'",
     "sandbox": "fresh browser context entered from the landing primary action"
+  },
+  {
+    "id": "browser-record-import",
+    "claim": "The browser reader imports and renders a compact record, including its run, environment, checks, statuses, and validation errors.",
+    "where": "landing page and README",
+    "test": "npm run qa:browser -- --grep '@claim:browser-record-import'",
+    "sandbox": "fresh browser context; shipped compact record followed by an invalid compact record"
+  },
+  {
+    "id": "help-options",
+    "claim": "The CLI help lists every supported option and exits successfully.",
+    "where": "README strict validation section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:help-options'",
+    "sandbox": "fresh packaged CLI installation"
+  },
+  {
+    "id": "json-validation-output",
+    "claim": "The CLI prints a machine-readable validation result for both a compact record and an OpenTofu or Terraform event stream.",
+    "where": "README strict validation section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:json-validation-output'",
+    "sandbox": "fresh packaged CLI installation; shipped compact record and event stream"
   },
   {
     "id": "mit-license",

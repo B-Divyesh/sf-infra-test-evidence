@@ -1,7 +1,12 @@
 import './style.css';
+import './routes.ts';
 import { validateEvidence, type Check, type Evidence } from './evidence.ts';
 
-const sample: Evidence = { run: 'staging-2026-08-27.1', environment: 'staging', recordedAt: '2026-08-27T12:00:00Z', checks: [{ name: 'HTTP health endpoint', status: 'pass', durationMs: 148 }, { name: 'Database migration', status: 'pass', durationMs: 734 }] };
+if (window.location.pathname === '/' && new URLSearchParams(window.location.search).get('demo') === '1') {
+  window.location.replace('/demo/?demo=1');
+}
+
+const sample: Evidence = { run: 'network.tftest.hcl', environment: 'local conversion sample', recordedAt: '2026-08-27T12:00:00Z', checks: [{ name: 'private_network_only', status: 'pass', durationMs: 180 }, { name: 'blocks_public_ingress', status: 'fail', durationMs: 310 }] };
 const fileInput = document.querySelector<HTMLInputElement>('#evidence-file')!;
 const result = document.querySelector<HTMLElement>('#result')!;
 const error = document.querySelector<HTMLElement>('#file-error')!;
@@ -14,6 +19,9 @@ const recordingStatus = document.querySelector<HTMLElement>('#recording-status')
 
 function text(value: unknown, fallback = 'Not recorded'): string { return typeof value === 'string' && value.trim() ? value : fallback; }
 function escapeHtml(value: string): string { const node = document.createElement('span'); node.textContent = value; return node.innerHTML; }
+function demoProof(): string {
+  return `<section class="demo-proof" aria-labelledby="demo-proof-title"><div><p class="eyebrow">Converted sample output</p><h3 id="demo-proof-title">Failed OpenTofu test ready for review</h3></div><dl><div><dt>Failed check</dt><dd><strong>blocks_public_ingress</strong> · FAIL · 310 ms</dd></div><div><dt>Assertion path</dt><dd><code>aws_security_group.web.ingress</code></dd></div><div><dt>Redaction</dt><dd><code>[REDACTED]</code> replaced a sensitive value</dd></div><div><dt>Provenance</dt><dd><code>SHA-256 926eb21…10fddbf</code></dd></div><div><dt>Output files</dt><dd><code>report.xml</code> · <code>evidence/evidence.json</code> · <code>evidence/index.html</code></dd></div></dl></section>`;
+}
 function render(record: Evidence): void {
   const checked = validateEvidence(record);
   error.hidden = true;
@@ -21,7 +29,8 @@ function render(record: Evidence): void {
   status.className = `status ${checked.valid ? 'status-ok' : 'status-error'}`;
   const rows = checked.checks.map((check: Check) => `<li><span>${escapeHtml(text(check.name, 'Unnamed check'))}</span><b class="check-${escapeHtml(text(check.status, 'unknown').toLowerCase())}">${escapeHtml(text(check.status, 'unknown'))}</b><small>${typeof check.durationMs === 'number' ? `${check.durationMs} ms` : 'No duration'}</small></li>`).join('');
   result.className = 'result';
-  result.innerHTML = `<div class="record-summary"><span>Run <strong>${escapeHtml(text(record.run))}</strong></span><span>Environment <strong>${escapeHtml(text(record.environment))}</strong></span><span>Recorded <strong>${escapeHtml(text(record.recordedAt))}</strong></span></div>${checked.valid ? `<h3>Recorded checks</h3><ul class="checks">${rows}</ul>` : `<h3>Make this record reviewable</h3><ul class="problems">${checked.errors.map((issue) => `<li>${escapeHtml(issue)}</li>`).join('')}</ul>`}`;
+  const proof = document.body.dataset.mode === 'demo' && record === sample ? demoProof() : '';
+  result.innerHTML = `${proof}<div class="record-summary"><span>Run <strong>${escapeHtml(text(record.run))}</strong></span><span>Environment <strong>${escapeHtml(text(record.environment))}</strong></span><span>Recorded <strong>${escapeHtml(text(record.recordedAt))}</strong></span></div>${checked.valid ? `<h3>Recorded checks</h3><ul class="checks">${rows}</ul>` : `<h3>Make this record reviewable</h3><ul class="problems">${checked.errors.map((issue) => `<li>${escapeHtml(issue)}</li>`).join('')}</ul>`}`;
 }
 function showFileError(message: string): void { error.textContent = message; error.hidden = false; status.textContent = 'Could not read file'; status.className = 'status status-error'; }
 async function readFile(file: File): Promise<void> { try { render(JSON.parse(await file.text()) as Evidence); } catch { showFileError('That file is not valid JSON. Choose an exported evidence record or correct the file and try again.'); } }

@@ -1,13 +1,13 @@
 # Infra Test Evidence
 
 Infra Test Evidence converts local OpenTofu or Terraform `test -json` output
-into a JUnit report and a redacted static evidence page. It is for
+into a JUnit report and a redacted reviewer page. It is for
 infrastructure-module maintainers who need reviewers to inspect failed tests
 without uploading logs or plans.
 
 The companion landing page is https://infra-test-evidence.sociobot.in. It is a
-local reader for the compact evidence record used by older workflows. Open
-https://infra-test-evidence.sociobot.in/demo/ to try it with sample data.
+local reader for the compact record used by earlier workflows. Open
+https://infra-test-evidence.sociobot.in/?demo=1 to try it with sample data.
 The landing page also includes a self-hosted recording and transcript of the
 packaged CLI demo.
 
@@ -27,7 +27,7 @@ cargo build --release --locked
 
 ## Convert OpenTofu or Terraform test output
 
-Capture the JSON-lines output, then create both review outputs:
+Capture the JSON-lines output, then create three output files:
 
 ```sh
 tofu test -json > tofu-test.jsonl
@@ -36,19 +36,18 @@ infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl
 # terraform test -json > terraform-test.jsonl
 ```
 
-`report.xml` is a JUnit test suite suitable for CI consumers. `evidence/`
-contains `index.html` and `evidence.json`; open `evidence/index.html` directly
-or serve that directory statically. It records test-case inputs, assertion
-paths where emitted by the runner, redacted plan-change summaries, failures,
-and source provenance, including the input SHA-256. The reviewer page works
-from disk and makes no network requests.
+`report.xml` contains the converted checks in JUnit XML. `evidence/` contains
+`index.html` and `evidence.json`; open `evidence/index.html` directly or serve
+that directory statically. It records test-case inputs, assertion paths where
+emitted by the runner, redacted plan-change summaries, failures, and source
+provenance, including the input SHA-256. The reviewer page works from disk and
+makes no network requests.
 
 Secret- and resource-identifier-named fields are recursively redacted before
-they reach the evidence artifact. Explicit OpenTofu/Terraform `sensitive: true`
-values and `before_sensitive`, `after_sensitive`, and `sensitive_values` masks
-are also authoritative. Malformed sensitivity metadata rejects the input and
-does not produce reviewer artifacts. See `examples/tofu-test.jsonl` for a
-complete sample.
+they reach the output files. The CLI also redacts values marked by
+`sensitive: true`, `before_sensitive`, `after_sensitive`, or
+`sensitive_values`. Malformed sensitivity metadata rejects the input and does
+not produce output files. See `examples/tofu-test.jsonl` for a complete sample.
 
 ## Try the bundled demo
 
@@ -63,16 +62,17 @@ page to a new temporary directory. It prints every output path when complete.
 
 ## Strict validation and CI
 
-The existing compact record remains supported for portable workflows:
+The CLI still validates the earlier compact JSON record used by the browser
+reader:
 
 ```sh
 infra-test-evidence --json examples/passing-evidence.json
 # {"checks":2,"errors":[],"valid":true}
 ```
 
-That record requires non-empty `run`, `environment`, and `recordedAt` strings
-and at least one check with a non-empty `name` and supported `status` (`pass`,
-`fail`, `error`, or `skip`). Invalid JSON and incomplete records exit 2.
+Set `run`, `environment`, and `recordedAt` to non-empty strings. Add one named
+check with status `pass`, `fail`, `error`, or `skip`. Invalid JSON and
+incomplete records exit 2.
 
 The converter exits 0 for valid input, 2 for invalid input or output failures,
 and 64 for incorrect usage. `--help` documents every option. `--json` prints a
@@ -92,10 +92,8 @@ npm run qa:a11y
 npm run package:check    # cargo package and npm pack dry run
 ```
 
-Deploy `dist/site/` as a static site. The emitted `staticwebapp.config.json`
-sets restrictive browser response policies and immutable caching for hashed
-assets. The browser reader uses no analytics, remote fonts, CDNs, storage, or
-uploads.
+Deploy `dist/site/` as a static site. The browser reader uses no analytics,
+remote fonts, CDNs, storage, or uploads.
 
 ## License
 
@@ -103,9 +101,9 @@ MIT. See [LICENSE](LICENSE).
 
 ## Evidence safety
 
-The converter fails closed: an event stream must finish with one supported test
-summary, every completed run must use a supported status, and negative
-durations are rejected. Test-plan variables, outputs, resource changes, and
-assertion traversals are correlated with their test run before redacted
-reviewer evidence is written. A sensitive diagnostic is redacted as a whole,
-so an unlabelled value in a diagnostic diff cannot escape the artifact.
+The converter rejects an event stream without one final supported summary. It
+also rejects unsupported run statuses and negative durations. Test-plan
+variables, outputs, resource changes, and assertion traversals stay with their
+matching test run before redacted output files are written. The CLI
+redacts the whole sensitive diagnostic. This keeps unmarked values in the same
+diagnostic out of every output file.

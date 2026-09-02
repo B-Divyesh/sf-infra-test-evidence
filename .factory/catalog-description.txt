@@ -1,0 +1,1 @@
+Turn infrastructure tests into redacted JUnit, JSON, and reviewer evidence.

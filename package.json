@@ -15,7 +15,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "check": "npm run lint && npm run typecheck && npm test",
-    "package:check": "cargo package --locked && npm pack --dry-run",
+    "package:check": "cargo package --locked --allow-dirty && npm pack --dry-run",
     "consumer:check": "cargo run --locked -- --json examples/passing-evidence.json",
     "qa:browser": "playwright test",
     "qa:a11y": "playwright test --grep accessibility"

@@ -24,16 +24,18 @@
     <a class="skip-link" href="#main">Skip to terms</a>
     <header class="masthead">
       <a class="wordmark" href="/" aria-label="ITE — Infra Test Evidence home">ITE<span>•</span></a>
-      <nav aria-label="Primary"><a href="/demo/">Demo</a><a href="/#format">Record format</a><a href="/privacy/">Privacy</a></nav>
+      <nav aria-label="Primary"><a href="/demo/?demo=1">Demo</a><a href="/#format">Record format</a><a href="/privacy/">Privacy</a></nav>
     </header>
     <main id="main" class="document">
       <p class="eyebrow">Product policy</p>
-      <h1>Terms</h1>
+      <h1 tabindex="-1">Terms</h1>
       <p>This free tool helps you inspect test evidence. It does not prove that infrastructure is safe, complete, or compliant.</p>
       <p>Review the underlying test results before making deployment decisions.</p>
       <h2>License and warranty</h2>
       <p>The software is provided under the MIT License, without warranty.</p>
     </main>
+    <p id="route-announcement" class="visually-hidden" aria-live="polite"></p>
     <footer><span>Infra Test Evidence turns test runs into reviewer evidence.</span><span><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · Built by Param Factory · v0.1.0</span></footer>
+    <script type="module" src="/src/routes.ts"></script>
   </body>
 </html>

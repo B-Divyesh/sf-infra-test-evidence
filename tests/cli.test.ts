@@ -8,6 +8,20 @@ const root = process.cwd();
 let releaseRoot: string;
 let releaseCli: string;
 
+function hasBalancedXmlTags(xml: string): boolean {
+  const tags = [...xml.matchAll(/<\/?([A-Za-z_:][\w:.-]*)(?:\s[^>]*)?\/?\s*>/g)].map((match) => match[0]);
+  const stack: string[] = [];
+  for (const tag of tags) {
+    if (tag.startsWith('</')) {
+      if (stack.pop() !== tag.slice(2, -1)) return false;
+    } else if (!tag.endsWith('/>') && !tag.startsWith('<?') && !tag.startsWith('<!')) {
+      const name = /^<([^\s/>]+)/.exec(tag)?.[1];
+      if (name) stack.push(name);
+    }
+  }
+  return stack.length === 0;
+}
+
 describe('release CLI conversion', () => {
   beforeAll(() => {
     releaseRoot = mkdtempSync(join(tmpdir(), 'infra-test-evidence-release-'));
@@ -67,7 +81,11 @@ describe('release CLI conversion', () => {
     try {
       const result = execFileSync('cargo', ['run', '--quiet', '--locked', '--', '--json', '--junit', junit, '--evidence-dir', evidence, 'examples/opentofu-real-stream.jsonl'], { cwd: root, encoding: 'utf8' });
       expect(JSON.parse(result)).toEqual({ valid: true, checks: 2, errors: [] });
-      expect(readFileSync(junit, 'utf8')).toContain('<testsuite');
+      const junitXml = readFileSync(junit, 'utf8');
+      expect(junitXml).toContain('<testsuite');
+      expect(hasBalancedXmlTags(junitXml)).toBe(true);
+      expect(junitXml).toContain('name="requires_production"');
+      expect(junitXml).toContain('name="protects_sensitive_value"');
       const artifactText = readFileSync(join(evidence, 'evidence.json'), 'utf8');
       const artifact = JSON.parse(artifactText);
       expect(artifact.provenance.sourceKind).toBe('terraform-test-json');
@@ -112,6 +130,20 @@ describe('release CLI conversion', () => {
     const usage = spawnSync(releaseCli, ['--demo', '--json'], { cwd: root, encoding: 'utf8' });
     expect(usage.status).toBe(64);
     expect(usage.stderr).toContain('--demo cannot be combined');
+  });
+
+  it('@claim:help-options lists every accepted CLI option and succeeds', () => {
+    const result = spawnSync(releaseCli, ['--help'], { cwd: root, encoding: 'utf8' });
+    expect(result.status).toBe(0);
+    for (const option of ['--demo', '--json', '--junit <report.xml>', '--evidence-dir <dir>', '-h, --help']) expect(result.stdout).toContain(option);
+  });
+
+  it('@claim:json-validation-output prints one parseable validation shape for compact and event-stream inputs', () => {
+    for (const input of ['examples/passing-evidence.json', 'examples/tofu-test.jsonl']) {
+      const result = spawnSync(releaseCli, ['--json', input], { cwd: root, encoding: 'utf8' });
+      expect(result.status, input).toBe(0);
+      expect(JSON.parse(result.stdout), input).toEqual({ valid: true, checks: 2, errors: [] });
+    }
   });
 
   it('@claim:event-stream-validation rejects incomplete, repeated, late, unsupported, and negative stream results', () => {

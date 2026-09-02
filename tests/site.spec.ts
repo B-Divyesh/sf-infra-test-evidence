@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -9,13 +9,28 @@ import { pathToFileURL } from 'node:url';
 const origin = 'http://127.0.0.1:4173';
 
 test('@claim:site-demo opens, resets, and exits the in-memory sample from the first screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await expect(page.getByText('For infrastructure-module maintainers')).toBeVisible();
   await page.getByRole('link', { name: 'Try it with sample data' }).first().click();
-  await expect(page).toHaveURL(/\/demo\/$/);
+  await expect(page).toHaveURL(/\/demo\/\?demo=1$/);
   await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
   await expect(page.getByText('2 checks ready')).toBeVisible();
+  const proof = page.getByLabel('Failed OpenTofu test ready for review');
+  await expect(proof.getByText('blocks_public_ingress', { exact: true })).toBeVisible();
+  await expect(proof.getByText('aws_security_group.web.ingress', { exact: true })).toBeVisible();
+  await expect(proof.getByText('[REDACTED]', { exact: true })).toBeVisible();
+  await expect(proof.getByText('report.xml', { exact: true })).toBeVisible();
+  await expect(proof.getByText(/SHA-256 926eb21/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Recorded checks' })).toBeVisible();
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    for (const text of ['blocks_public_ingress', '[REDACTED]', 'report.xml']) {
+      const box = await proof.getByText(text, { exact: true }).first().boundingBox();
+      expect(box, `${text} has a bounding box`).not.toBeNull();
+      expect(box!.y + box!.height, `${text} is in the ${viewport.width}px first viewport`).toBeLessThanOrEqual(viewport.height);
+    }
+  }
 
   await page.locator('#evidence-file').setInputFiles({
     name: 'one-check.json',
@@ -27,10 +42,45 @@ test('@claim:site-demo opens, resets, and exits the in-memory sample from the fi
   await expect(page.getByRole('alert')).toContainText('not valid JSON');
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(page.getByText('2 checks ready')).toBeVisible();
+  await expect(proof.getByText('blocks_public_ingress', { exact: true })).toBeVisible();
   await expect(page.getByRole('alert')).toBeHidden();
   await page.getByRole('link', { name: 'Start for real' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByText('Demo — sample data, nothing is saved')).toHaveCount(0);
+});
+
+test('@claim:browser-record-import renders compact record details and validation errors', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#evidence-file').setInputFiles({
+    name: 'passing-evidence.json',
+    mimeType: 'application/json',
+    buffer: readFileSync('examples/passing-evidence.json'),
+  });
+  await expect(page.getByText('2 checks ready')).toBeVisible();
+  await expect(page.getByText('staging-2026-08-27.1', { exact: true })).toBeVisible();
+  await expect(page.getByText('staging', { exact: true })).toBeVisible();
+  await expect(page.getByText('HTTP health endpoint')).toBeVisible();
+  await expect(page.getByText('Database migration')).toBeVisible();
+  await expect(page.getByText('pass', { exact: true })).toHaveCount(2);
+  await page.locator('#evidence-file').setInputFiles({
+    name: 'invalid-compact-record.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ run: '', environment: 'staging', recordedAt: '', checks: [{ name: '', status: 'unknown', durationMs: -1 }] })),
+  });
+  await expect(page.getByText('Make this record reviewable')).toBeVisible();
+  await expect(page.getByText('Add a non-empty “run” field.')).toBeVisible();
+  await expect(page.getByText('Check 1 needs a supported status.')).toBeVisible();
+});
+
+test('keeps the landing action and all three product facts in a 1440px first viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Try it with sample data' })).toBeVisible();
+  for (const fact of ['Runs in your browser', 'No trackers or uploads', 'Free under the MIT License']) {
+    const box = await page.getByText(fact, { exact: true }).boundingBox();
+    expect(box, `${fact} has a bounding box`).not.toBeNull();
+    expect(box!.y + box!.height, `${fact} is in the desktop first viewport`).toBeLessThanOrEqual(900);
+  }
 });
 
 test('@claim:reader-private keeps local evidence off the network and out of browser storage', async ({ browser }) => {
@@ -65,7 +115,7 @@ test('@claim:cli-recording plays the packaged CLI recording with a transcript an
   expect(await recording.text()).toContain('Demo complete: 2 checks converted');
 
   await page.goto('/');
-  const figure = page.getByRole('figure', { name: /Watch the three outputs appear/ });
+  const figure = page.getByRole('figure', { name: /See the CLI create JUnit, JSON, and HTML/ });
   const output = page.locator('#recording-output');
   const transcript = page.locator('.recording-transcript');
   await expect(figure).toBeVisible();
@@ -96,7 +146,7 @@ test('publishes distinct demo, policy, discovery, and error documents', async ({
 
   await page.goto('/demo/');
   await expect(page).toHaveTitle('Demo — Infra Test Evidence');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Inspect sample infrastructure test evidence');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Review sample test evidence');
   await page.goto('/privacy/');
   await expect(page).toHaveTitle('Privacy — Infra Test Evidence');
   await expect(page.getByRole('heading', { name: 'Privacy', exact: true })).toBeVisible();
@@ -106,7 +156,20 @@ test('publishes distinct demo, policy, discovery, and error documents', async ({
   await page.goto('/404.html');
   await expect(page).toHaveTitle('Page not found — Infra Test Evidence');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('This evidence page was not found');
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://infra-test-evidence.sociobot.in/404.html');
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Page not found — Infra Test Evidence');
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
   expect(errors).toEqual([]);
+});
+
+test('moves focus and announces the destination after internal forward and back navigation', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Demo' }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  await expect(page.locator('#route-announcement')).toHaveText('Demo — Infra Test Evidence');
+  await page.goBack();
+  await expect(page.getByRole('heading', { level: 1 })).toBeFocused();
+  await expect(page.locator('#route-announcement')).toHaveText('Infra Test Evidence — review test runs locally');
 });
 
 test('supports keyboard navigation, visible focus, reduced motion, and 200% text', async ({ page }) => {
@@ -155,7 +218,7 @@ test('accessibility: root, demo, policy, and error pages have no serious finding
       await expect(page.locator('main')).toHaveCount(1);
       await expect(page.locator('h1')).toHaveCount(1);
       const scan = await new AxeBuilder({ page: page as never }).analyze();
-      expect(scan.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? '')).map((violation) => violation.id), `${route} in ${colorScheme} mode`).toEqual([]);
+      expect(scan.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? '')).map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(' ')).join(', ')}`), `${route} in ${colorScheme} mode`).toEqual([]);
     }
   }
 });

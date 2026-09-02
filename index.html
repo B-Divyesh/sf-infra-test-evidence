@@ -25,19 +25,19 @@
     <a class="skip-link" href="#main">Skip to evidence reader</a>
     <header class="masthead">
       <a class="wordmark" href="/" aria-label="ITE — Infra Test Evidence home">ITE<span>•</span></a>
-      <nav aria-label="Primary"><a href="/demo/">Demo</a><a href="#how">How it works</a><a href="/privacy/">Privacy</a></nav>
+      <nav aria-label="Primary"><a href="/?demo=1">Demo</a><a href="#how">How it works</a><a href="/privacy/">Privacy</a></nav>
     </header>
     <main id="main">
       <section class="intro" aria-labelledby="page-title">
         <p class="eyebrow">Infrastructure test evidence</p>
-        <h1 id="page-title">Turn infrastructure tests into reviewable evidence</h1>
+        <h1 id="page-title" tabindex="-1">Turn infrastructure tests into reviewable evidence</h1>
         <p class="lede">For infrastructure-module maintainers who need reviewers to inspect failed OpenTofu or Terraform tests without uploading logs.</p>
-        <div class="hero-actions"><a class="primary-action" href="/demo/">Try it with sample data</a><a class="secondary-action" href="#reader-title">Open your evidence file</a><span>See two example checks in the browser reader.</span></div>
+        <div class="hero-actions"><a class="primary-action" href="/?demo=1">Try it with sample data</a><a class="secondary-action" href="#reader-title">Open your evidence file</a><span>See a failed test, redaction, and output files.</span></div>
         <ul class="hero-facts" aria-label="Product facts"><li>Runs in your browser</li><li>No trackers or uploads</li><li>Free under the MIT License</li></ul>
       </section>
       <section class="recording" aria-labelledby="recording-title">
         <div class="recording-head">
-          <div><p class="eyebrow">Packaged CLI demo</p><h2 id="recording-title">Watch the three outputs appear</h2></div>
+          <div><p class="eyebrow">Packaged CLI demo</p><h2 id="recording-title">See the CLI create JUnit, JSON, and HTML</h2></div>
           <button id="recording-control" class="recording-control" type="button">Pause recording</button>
         </div>
         <p>The real packaged <code>--demo</code> flow converts two bundled checks without setup.</p>
@@ -63,7 +63,7 @@ Evidence JSON: /tmp/infra-test-evidence-demo-…/evidence/evidence.json</code></
         <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a record</h2></div><output id="status" class="status" aria-live="polite">Waiting for evidence</output></div>
         <label class="drop-zone" for="evidence-file"><span class="drop-mark" aria-hidden="true">↓</span><span><strong>Choose a JSON evidence file</strong><small>or drag it here · nothing is uploaded</small></span><input id="evidence-file" type="file" accept="application/json,.json" /></label>
         <p class="file-error" id="file-error" role="alert" hidden></p>
-        <div id="result" class="result empty" aria-live="polite"><p>Your run details and checks will appear here.</p><a class="text-button" href="/demo/">Try it with sample data</a></div>
+        <div id="result" class="result empty" aria-live="polite"><p>Your run details and checks will appear here.</p><a class="text-button" href="/?demo=1">Try it with sample data</a></div>
       </section>
       <section id="how" class="how" aria-labelledby="how-title">
         <p class="eyebrow">Three local steps</p>
@@ -74,14 +74,15 @@ Evidence JSON: /tmp/infra-test-evidence-demo-…/evidence/evidence.json</code></
           <li><strong>Review the result.</strong><span>Open the redacted page from disk or inspect a compact record above.</span></li>
         </ol>
       </section>
-      <section id="format" class="format" aria-labelledby="format-title"><p class="eyebrow">Small by design</p><h2 id="format-title">CI outputs and record format</h2><p>Run the converter against <code>tofu test -json</code> or <code>terraform test -json</code> output to create a JUnit report and a self-contained reviewer page. The page includes test inputs, assertion paths, redacted plan changes, failures, and provenance.</p><pre tabindex="0" aria-label="CLI conversion command"><code>infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl</code></pre><p>The local reader also accepts the compact portable record used by earlier workflows:</p><pre tabindex="0" aria-label="Example portable evidence JSON"><code>{
+      <section id="format" class="format" aria-labelledby="format-title"><p class="eyebrow">Generated files</p><h2 id="format-title">CI outputs and compact record format</h2><p>The CLI creates three output files: a JUnit report, evidence JSON, and a reviewer page. The reviewer page includes test inputs, assertion paths, redacted plan changes, failures, and provenance.</p><pre tabindex="0" aria-label="CLI conversion command"><code>infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl</code></pre><p>The local reader also accepts the compact record used by earlier workflows:</p><pre tabindex="0" aria-label="Example compact record JSON"><code>{
   "run": "staging-2026-08-27.1",
   "environment": "staging",
   "recordedAt": "2026-08-27T12:00:00Z",
   "checks": [{ "name": "HTTP health", "status": "pass" }]
-}</code></pre><p>Use <code>infra-test-evidence --json evidence.json</code> to strictly validate this compact form in CI.</p></section>
+}</code></pre><p>Use <code>infra-test-evidence --json evidence.json</code> to strictly validate this compact record in CI.</p></section>
       <section class="limits" aria-labelledby="limits-title"><p class="eyebrow">Boundaries</p><h2 id="limits-title">What it does not do</h2><p>It does not upload files, run infrastructure changes, or replace a reviewer. It only converts and displays the evidence you provide.</p><p><a href="/privacy/">Read the privacy details</a>.</p></section>
     </main>
+    <p id="route-announcement" class="visually-hidden" aria-live="polite"></p>
     <footer><span>Infra Test Evidence turns test runs into reviewer evidence.</span><span><a href="/privacy/">Privacy</a> · <a href="/terms/">Terms</a> · Built by Param Factory · v0.1.0</span></footer>
     <script type="module" src="/src/main.ts"></script>
   </body>
