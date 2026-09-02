@@ -72,6 +72,32 @@ describe('release CLI conversion', () => {
     }
   });
 
+  it('@claim:cross-provider-resource-redaction removes AWS network, Azure resource, and GCP instance identifiers from every release-package artifact', () => {
+    const output = mkdtempSync(join(tmpdir(), 'infra-test-evidence-cross-provider-identifiers-'));
+    const junit = join(output, 'report.xml');
+    const evidence = join(output, 'evidence');
+    const identifiers = [
+      'subnet-0123456789abcdef0',
+      'sg-0123456789abcdef0',
+      '/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/prod/providers/Microsoft.Compute/virtualMachines/api-01',
+      'projects/acme-prod/zones/us-central1-a/instances/api-01',
+    ];
+    try {
+      const result = spawnSync(releaseCli, ['--json', '--junit', junit, '--evidence-dir', evidence, 'tests/fixtures/verification-10-cross-provider-identifiers.jsonl'], { cwd: root, encoding: 'utf8' });
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({ valid: true, checks: 1, errors: [] });
+
+      const artifacts = [junit, join(evidence, 'evidence.json'), join(evidence, 'index.html')];
+      for (const artifact of artifacts) {
+        const contents = readFileSync(artifact, 'utf8');
+        for (const identifier of identifiers) expect(contents).not.toContain(identifier);
+        expect(contents).toContain('[REDACTED]');
+      }
+    } finally {
+      rmSync(output, { recursive: true, force: true });
+    }
+  });
+
   it('@claim:cli-demo runs bundled data from the packaged binary in an isolated temporary directory', () => {
     const temporaryRoot = mkdtempSync(join(tmpdir(), 'infra-test-evidence-demo-test-'));
     try {

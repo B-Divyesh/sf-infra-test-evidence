@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0 repair 9
+
+- Redact AWS subnet and security-group IDs, Azure resource IDs, and GCP
+  instance paths in structured values and free text.
+- Scan JUnit XML, reviewer JSON, and reviewer HTML in one packaged
+  cross-provider claim.
+
 ## 0.1.0 repair 7
 
 - Add an accessible, self-hosted recording of the packaged CLI demo.

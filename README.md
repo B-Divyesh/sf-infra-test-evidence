@@ -43,8 +43,10 @@ emitted by the runner, redacted plan-change summaries, failures, and source
 provenance, including the input SHA-256. The reviewer page works from disk and
 makes no network requests.
 
-Sensitive values, AWS ARNs, EC2 instance IDs, and resource-identifier-named
-fields are redacted before they reach the output files. The CLI also redacts values marked by
+Sensitive values and common AWS, Azure, and GCP resource identifiers are
+redacted before they reach the output files. This includes AWS ARNs, EC2,
+subnet, and security-group IDs, Azure resource IDs, and GCP instance paths.
+Resource-identifier-named fields are also redacted. The CLI also redacts values marked by
 `sensitive: true`, `before_sensitive`, `after_sensitive`, or
 `sensitive_values`. Malformed sensitivity metadata rejects the input and does
 not produce output files. See `examples/tofu-test.jsonl` for a complete sample.

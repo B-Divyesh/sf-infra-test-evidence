@@ -115,8 +115,110 @@ fn ec2_instance_id(value: &str) -> bool {
     }
     false
 }
+fn bounded_hex_identifier(value: &str, prefix: &str, lengths: &[usize]) -> bool {
+    let bytes = value.as_bytes();
+    for (index, _) in value.match_indices(prefix) {
+        let has_left_boundary = index == 0
+            || !matches!(
+                bytes[index - 1],
+                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-'
+            );
+        if !has_left_boundary {
+            continue;
+        }
+        let start = index + prefix.len();
+        let mut end = start;
+        while end < bytes.len() && bytes[end].is_ascii_hexdigit() {
+            end += 1;
+        }
+        let has_right_boundary = end == bytes.len()
+            || !matches!(
+                bytes[end],
+                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-'
+            );
+        if lengths.contains(&(end - start)) && has_right_boundary {
+            return true;
+        }
+    }
+    false
+}
+fn aws_network_id(value: &str) -> bool {
+    bounded_hex_identifier(value, "subnet-", &[8, 17])
+        || bounded_hex_identifier(value, "sg-", &[8, 17])
+}
+fn azure_resource_id(value: &str) -> bool {
+    let lowercase = value.to_ascii_lowercase();
+    lowercase
+        .match_indices("/subscriptions/")
+        .any(|(index, _)| {
+            let mut segments = lowercase[index + 1..].split('/');
+            matches!(
+                (
+                    segments.next(),
+                    segments.next(),
+                    segments.next(),
+                    segments.next(),
+                    segments.next(),
+                    segments.next(),
+                    segments.next(),
+                    segments.next(),
+                ),
+                (
+                    Some("subscriptions"),
+                    Some(subscription),
+                    Some("resourcegroups"),
+                    Some(resource_group),
+                    Some("providers"),
+                    Some(provider),
+                    Some(resource_type),
+                    Some(resource_name),
+                ) if !subscription.is_empty()
+                    && !resource_group.is_empty()
+                    && !provider.is_empty()
+                    && !resource_type.is_empty()
+                    && !resource_name.is_empty()
+            )
+        })
+}
+fn gcp_instance_path(value: &str) -> bool {
+    let lowercase = value.to_ascii_lowercase();
+    let bytes = lowercase.as_bytes();
+    lowercase.match_indices("projects/").any(|(index, _)| {
+        let has_left_boundary = index == 0
+            || !matches!(
+                bytes[index - 1],
+                b'a'..=b'z' | b'0'..=b'9' | b'_' | b'-'
+            );
+        if !has_left_boundary {
+            return false;
+        }
+        let mut segments = lowercase[index..].split('/');
+        matches!(
+            (
+                segments.next(),
+                segments.next(),
+                segments.next(),
+                segments.next(),
+                segments.next(),
+                segments.next(),
+            ),
+            (
+                Some("projects"),
+                Some(project),
+                Some("zones"),
+                Some(zone),
+                Some("instances"),
+                Some(instance),
+            ) if !project.is_empty() && !zone.is_empty() && !instance.is_empty()
+        )
+    })
+}
 fn resource_identifier(value: &str) -> bool {
-    aws_arn(value) || ec2_instance_id(value)
+    aws_arn(value)
+        || ec2_instance_id(value)
+        || aws_network_id(value)
+        || azure_resource_id(value)
+        || gcp_instance_path(value)
 }
 fn sensitive_key(key: &str) -> bool {
     let key = key.to_ascii_lowercase();
@@ -126,6 +228,8 @@ fn sensitive_key(key: &str) -> bool {
             .any(|word| key.contains(word))
         || key == "id"
         || key.starts_with("id_")
+        || key == "resource_ref"
+        || key.ends_with("_resource_ref")
 }
 fn redact_text(value: &str) -> String {
     if secret(value) || resource_identifier(value) {
@@ -998,6 +1102,8 @@ mod tests {
         include_str!("../tests/fixtures/verification-9-resource-identifiers.jsonl");
     const LEGACY_IDENTIFIER_FIXTURE: &str =
         include_str!("../tests/fixtures/verification-9-legacy-identifiers.json");
+    const CROSS_PROVIDER_IDENTIFIER_FIXTURE: &str =
+        include_str!("../tests/fixtures/verification-10-cross-provider-identifiers.jsonl");
     const DURATION_STRING_FIXTURE: &str =
         include_str!("../tests/fixtures/verification-9-duration-string.json");
     const ELAPSED_STRING_FIXTURE: &str =
@@ -1054,6 +1160,37 @@ mod tests {
                 .unwrap()
                 .contains(REDACTED)
         );
+    }
+    #[test]
+    fn cross_provider_identifiers_are_redacted_from_structured_values_and_free_text() {
+        let identifiers = [
+            "subnet-0123456789abcdef0",
+            "sg-0123456789abcdef0",
+            "/subscriptions/11111111-2222-3333-4444-555555555555/resourceGroups/prod/providers/Microsoft.Compute/virtualMachines/api-01",
+            "projects/acme-prod/zones/us-central1-a/instances/api-01",
+        ];
+        for identifier in identifiers {
+            assert!(resource_identifier(identifier));
+            assert_eq!(
+                redact_text(&format!("failure contains {identifier}")),
+                REDACTED
+            );
+            assert_eq!(
+                redact(&json!({"ordinary_value": identifier}), None).unwrap(),
+                json!({"ordinary_value": REDACTED})
+            );
+        }
+
+        let report = parse(CROSS_PROVIDER_IDENTIFIER_FIXTURE).unwrap();
+        for output in [
+            junit(&report),
+            serde_json::to_string(&artifact(&report)).unwrap(),
+            page(&artifact(&report)),
+        ] {
+            for identifier in identifiers {
+                assert!(!output.contains(identifier));
+            }
+        }
     }
     #[test]
     fn real_stream_is_scoped_and_redacted() {
