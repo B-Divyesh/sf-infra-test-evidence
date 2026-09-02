@@ -1,25 +1,45 @@
-# Infra Test Evidence review 2 handoff
+# Infra Test Evidence polish 2 handoff
 
-- **Work order:** `infra-test-evidence-review-2`
-- **Candidate commit:** `f86ed93e79c9592874f27f216685e5c478a287a2`
+- **Work order:** `infra-test-evidence-polish-2`
+- **Repair commit:** `17462deb7815a31ca1a37e82b0b49399167b478c`
 - **Live URL:** https://infra-test-evidence.sociobot.in
-- **Result:** **FAIL**
+- **Result:** PASS
 
-The adversarial review is in `.factory/review-2.md`. No product code was
-modified. The review found six issues: one prior output-naming finding remains
-half-fixed, three published behaviors are not fully protected by their tagged
-claim tests, and two copy lines are vague or jargon-heavy.
+This repair closes F-2-1 through F-2-6 and re-verifies every earlier finding.
+The landing uses one output set—**JUnit report**, **evidence JSON**, and
+**reviewer page**. Strict validation now proves malformed JSON, incomplete
+records, output failures, valid input, and usage errors. Named identifier-field
+redaction has its own packaged-CLI claim. The demo claim proves each exact
+output path above the fold at 390×844 and 1440×900. The two vague copy lines
+were rewritten in direct language. See `.factory/polish-2.md` for the complete
+finding-to-evidence map.
 
-Verification used a `--no-local` clean clone. All 23 exact commands in
-`.factory/claims.json` passed separately. `npm run check`, `npm run build`, and
-`npm run package:check` passed. The factory URL verifier passed in 615 ms.
-Independent live Axe scans found no serious or critical violations on `/`,
-`/demo/`, `/privacy/`, `/terms/`, or `/404.html` in light and dark modes.
+## Verification
 
-The live cold read passes at 390 × 844 and 1440 × 900. The demo opens in one
-click with realistic failed OpenTofu evidence; its reset and exit controls
-work, all observed requests are same-origin, and browser storage stays empty.
-Routes, metadata, internal links, 404 behavior, and route-change focus pass.
+From a `git clone --no-local` of the repair commit, `npm ci` completed with
+zero audit vulnerabilities. Every one of the 24 exact commands in
+`.factory/claims.json` passed separately. That clean clone also passed:
 
-Next work should address F-2-1 through F-2-6, then rerun the complete checklist
-from a clean clone. No deployment or infrastructure action was taken.
+- `npm run check` — ESLint, TypeScript, 8 Rust tests, and 28 frontend tests.
+- `npm run build` — `dist/site/` produced; 6.78 kB raw / 2.69 kB gzip initial
+  main JavaScript and 11.74 kB raw / 3.38 kB gzip CSS.
+- `npm run qa:browser` — 22 browser tests.
+- `npm run qa:a11y` — 2 Axe tests.
+- `npm run package:check` — `cargo package --locked` and `npm pack --dry-run`.
+
+Production was deployed with the Azure Static Web Apps CLI from `dist/site/`.
+Cold live Chromium checks at 390×844 and 1440×900 confirmed the revised copy,
+the isolated `?demo=1` flow, all three output paths above the fold, and no
+console errors. Live Axe scans returned zero violations on `/`, `/demo/?demo=1`,
+`/privacy/`, `/terms/`, and `/not-found`. Live responses include the configured
+CSP, `Referrer-Policy`, `X-Content-Type-Options`, and `Permissions-Policy`.
+
+## Run and deploy
+
+Run `npm ci && npm run check && npm run build && npm run qa:browser && npm run
+qa:a11y && npm run package:check`. Deploy `dist/site/` to the scoped Static Web
+App `sf-infra-test-evidence`.
+
+## Known gaps
+
+None.
