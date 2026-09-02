@@ -3,8 +3,9 @@
 **Work order:** `infra-test-evidence-repair-8`
 **Base verifier report:** `.factory/verification-9.md` at
 `283838aa87005cfbb219b67eaa0ff4fe55f71cf0`
-**Status:** local repair verification passed; deployment evidence is recorded
-after the production upload below.
+**Repair commit:** `5f447ee` (`repair: redact evidence identifiers and validate streams`)
+**Live URL:** https://infra-test-evidence.sociobot.in
+**Status:** deployed and verified.
 
 ## What changed
 
@@ -85,9 +86,29 @@ the clean install: all 22 claims passed. The new counterexample commands are:
 
 ## Deployment and live identity
 
-Pending the repair commit push and static deployment. After upload, verify
-`https://infra-test-evidence.sociobot.in` with the fleet URL checker, live
-desktop/mobile browser checks, and byte comparison against `dist/site/`.
+- Pushed `5f447ee` to `origin/main`, built `dist/site/`, and deployed it with
+  `/opt/fleet/lib/deploy-static.sh infra-test-evidence dist/site` on
+  2026-09-02 UTC. The scoped Static Web App upload completed successfully and
+  the custom domain returned HTTPS 200.
+- `/opt/fleet/lib/verify-url.sh` passed against the live URL: 795 ms load,
+  zero console/page errors, title present, `lang=en`, one h1, one main,
+  zero missing image alt attributes, and zero unnamed buttons. Evidence:
+  `/tmp/infra-test-evidence-live-repair.XKtV4q`.
+- Every publicly served file in the fresh `dist/site/` matched the live bytes.
+  `staticwebapp.config.json` is intentionally not a public asset (live 404),
+  so it was excluded from the public-file comparison.
+- Fresh Playwright desktop (1440 × 900) and mobile (390 × 844) contexts passed:
+  skip-link keyboard focus and Enter navigation, no horizontal overflow,
+  no target below 44 px, same-origin-only requests, empty local/session/IDB
+  storage, zero console errors, and zero serious/critical axe findings on
+  `/`, `/demo/`, `/privacy/`, `/terms/`, and `/404.html`.
+- Live Lighthouse: 100 Performance, 100 Accessibility, 100 Best Practices,
+  and 100 SEO; FCP/LCP 0.9 s, TBT 0 ms, CLS 0, 11 KiB transfer. Report:
+  `/tmp/infra-test-evidence-lighthouse-repair.json`.
+- The live `demo-evidence.json` contains
+  `aws_security_group.web.ingress` and SHA-256
+  `85bfacaf2fd535dcf3a29441cac951ca408d87f723d9a96bbd814e3050711522`.
+  Its fields match the packaged CLI demo artifact in regression coverage.
 
 ## Known gaps / next steps
 
