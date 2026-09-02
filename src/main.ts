@@ -41,7 +41,7 @@ function demoProof(): string {
   const hash = text(demoArtifact.provenance?.inputSha256);
   const sourceHash = hash.length >= 14 ? `${hash.slice(0, 7)}…${hash.slice(-7)}` : hash;
   const redaction = JSON.stringify(demoArtifact).includes('[REDACTED]') ? '[REDACTED]' : 'Not recorded';
-  return `<section class="demo-proof" aria-labelledby="demo-proof-title"><div><p class="eyebrow">Converted sample output</p><h3 id="demo-proof-title">Failed OpenTofu test ready for review</h3></div><dl><div><dt>Failed check</dt><dd><strong>${escapeHtml(text(failed?.name))}</strong> · ${escapeHtml(text(failed?.status).toUpperCase())} · ${escapeHtml(formatDuration(failed?.durationSeconds))}</dd></div><div><dt>Assertion path</dt><dd><code>${escapeHtml(assertion)}</code></dd></div><div><dt>Redaction</dt><dd><code>${escapeHtml(redaction)}</code> appears in the converted evidence</dd></div><div><dt>Provenance</dt><dd><code>SHA-256 ${escapeHtml(sourceHash)}</code></dd></div><div><dt>Output files</dt><dd><code>report.xml</code> · <code>evidence/evidence.json</code> · <code>evidence/index.html</code></dd></div></dl></section>`;
+  return `<section class="demo-proof" aria-labelledby="demo-proof-title"><div><p class="eyebrow">Converted sample output</p><h3 id="demo-proof-title">Failed OpenTofu test ready for review</h3></div><dl><div><dt>Failed check</dt><dd><strong>${escapeHtml(text(failed?.name))}</strong> · ${escapeHtml(text(failed?.status).toUpperCase())} · ${escapeHtml(formatDuration(failed?.durationSeconds))}</dd></div><div><dt>Assertion path</dt><dd><code>${escapeHtml(assertion)}</code></dd></div><div><dt>Redaction</dt><dd><code>${escapeHtml(redaction)}</code> appears in the converted evidence</dd></div><div><dt>Input SHA-256</dt><dd><code>SHA-256 ${escapeHtml(sourceHash)}</code></dd></div><div><dt>Output files</dt><dd><code>report.xml</code> · <code>evidence/evidence.json</code> · <code>evidence/index.html</code></dd></div></dl></section>`;
 }
 function render(record: Evidence): void {
   currentRecord = record;
@@ -55,7 +55,7 @@ function render(record: Evidence): void {
   result.innerHTML = `${proof}<div class="record-summary"><span>Run <strong>${escapeHtml(text(record.run))}</strong></span><span>Environment <strong>${escapeHtml(text(record.environment))}</strong></span><span>Recorded <strong>${escapeHtml(text(record.recordedAt))}</strong></span></div>${checked.valid ? `<h3>Recorded checks</h3><ul class="checks">${rows}</ul>` : `<h3>Make this record reviewable</h3><ul class="problems">${checked.errors.map((issue) => `<li>${escapeHtml(issue)}</li>`).join('')}</ul>`}`;
 }
 function showFileError(message: string): void { error.textContent = message; error.hidden = false; status.textContent = 'Could not read file'; status.className = 'status status-error'; }
-async function readFile(file: File): Promise<void> { try { render(JSON.parse(await file.text()) as Evidence); } catch { showFileError('That file is not valid JSON. Choose an exported evidence record or correct the file and try again.'); } }
+async function readFile(file: File): Promise<void> { try { render(JSON.parse(await file.text()) as Evidence); } catch { showFileError('That file is not valid JSON. Choose a compact record or correct the file and try again.'); } }
 fileInput.addEventListener('change', () => { const file = fileInput.files?.[0]; if (file) void readFile(file); });
 dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZone.classList.add('dragging'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
@@ -100,7 +100,7 @@ async function prepareRecording(): Promise<void> {
     const schedule = (): void => {
       if (!playing) return;
       if (position >= events.length) {
-        finish('Recording complete. JUnit, reviewer HTML, and evidence JSON paths are shown.');
+        finish('Recording complete. The JUnit report, evidence JSON, and reviewer page paths are shown.');
         return;
       }
       const previousTime = position === 0 ? 0 : events[position - 1][0];

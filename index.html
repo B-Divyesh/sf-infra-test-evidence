@@ -32,7 +32,7 @@
         <p class="eyebrow">Infrastructure test evidence</p>
         <h1 id="page-title" tabindex="-1">Turn infrastructure tests into reviewable evidence</h1>
         <p class="lede">For infrastructure-module maintainers who need reviewers to inspect failed OpenTofu or Terraform tests without uploading logs.</p>
-        <div class="hero-actions"><a class="primary-action" href="/?demo=1">Try it with sample data</a><a class="secondary-action" href="#reader-title">Open your evidence file</a><span>See a failed test, redaction, and output files.</span></div>
+        <div class="hero-actions"><a class="primary-action" href="/?demo=1">Try it with sample data</a><a class="secondary-action" href="#reader-title">Open a compact record</a><span>See a failed test, redaction, and output files.</span></div>
         <ul class="hero-facts" aria-label="Product facts"><li>Runs in your browser</li><li>No trackers or uploads</li><li>Free under the MIT License</li></ul>
       </section>
       <section class="recording" aria-labelledby="recording-title">
@@ -60,8 +60,8 @@ Evidence JSON: /tmp/infra-test-evidence-demo-…/evidence/evidence.json</code></
         </details>
       </section>
       <section class="reader" aria-labelledby="reader-title">
-        <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a record</h2></div><output id="status" class="status" aria-live="polite">Waiting for evidence</output></div>
-        <label class="drop-zone" for="evidence-file"><span class="drop-mark" aria-hidden="true">↓</span><span><strong>Choose a JSON evidence file</strong><small>or drag it here · nothing is uploaded</small></span><input id="evidence-file" type="file" accept="application/json,.json" /></label>
+        <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a compact record</h2></div><output id="status" class="status" aria-live="polite">Waiting for evidence</output></div>
+        <label class="drop-zone" for="evidence-file"><span class="drop-mark" aria-hidden="true">↓</span><span><strong>Choose a compact record</strong><small>or drag it here · nothing is uploaded</small></span><input id="evidence-file" type="file" accept="application/json,.json" /></label>
         <p class="file-error" id="file-error" role="alert" hidden></p>
         <div id="result" class="result empty" aria-live="polite"><p>Your run details and checks will appear here.</p><a class="text-button" href="/?demo=1">Try it with sample data</a></div>
       </section>
@@ -71,10 +71,10 @@ Evidence JSON: /tmp/infra-test-evidence-demo-…/evidence/evidence.json</code></
         <ol class="steps">
           <li><strong>Capture the run.</strong><span>Save OpenTofu or Terraform <code>test -json</code> output.</span></li>
           <li><strong>Convert the evidence.</strong><span>Create a JUnit report, evidence JSON, and a reviewer page.</span></li>
-          <li><strong>Review the result.</strong><span>Open the redacted page from disk or inspect a compact record above.</span></li>
+          <li><strong>Review the result.</strong><span>Open the reviewer page from disk or inspect a compact record above.</span></li>
         </ol>
       </section>
-      <section id="format" class="format" aria-labelledby="format-title"><p class="eyebrow">Generated files</p><h2 id="format-title">CI outputs and compact record format</h2><p>The CLI creates three output files: a JUnit report, evidence JSON, and a reviewer page. The reviewer page includes test inputs, assertion paths, redacted plan changes, failures, and provenance.</p><pre tabindex="0" aria-label="CLI conversion command"><code>infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl</code></pre><p>The local reader also opens the compact JSON record shown below:</p><pre tabindex="0" aria-label="Example compact record JSON"><code>{
+      <section id="format" class="format" aria-labelledby="format-title"><p class="eyebrow">Generated files</p><h2 id="format-title">CI outputs and compact record format</h2><p>The CLI creates three output files: a JUnit report, evidence JSON, and a reviewer page. The reviewer page includes test inputs, assertion paths, redacted plan changes, failures, and the input SHA-256.</p><pre tabindex="0" aria-label="CLI conversion command"><code>infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl</code></pre><p>The local reader also opens the compact record shown below:</p><pre tabindex="0" aria-label="Example compact record JSON"><code>{
   "run": "staging-2026-08-27.1",
   "environment": "staging",
   "recordedAt": "2026-08-27T12:00:00Z",

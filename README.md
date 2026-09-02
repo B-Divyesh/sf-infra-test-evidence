@@ -6,7 +6,7 @@ infrastructure-module maintainers who need reviewers to inspect failed tests
 without uploading logs or plans.
 
 The companion landing page is https://infra-test-evidence.sociobot.in. It is a
-local reader for the compact JSON record shown on the landing page. Open
+local reader for the compact record shown on the landing page. Open
 https://infra-test-evidence.sociobot.in/?demo=1 to try it with sample data.
 The landing page also includes a self-hosted recording and transcript of the
 packaged CLI demo.
@@ -64,8 +64,7 @@ page to a new temporary directory. It prints every output path when complete.
 
 ## Strict validation and CI
 
-The CLI still validates the earlier compact JSON record used by the browser
-reader:
+The CLI still validates the compact record used by the browser reader:
 
 ```sh
 infra-test-evidence --json examples/passing-evidence.json
@@ -107,7 +106,7 @@ MIT. See [LICENSE](LICENSE).
 The converter rejects an event stream without one final supported summary. It
 also rejects summary statuses that contradict completed runs, unsupported run
 statuses, and malformed or negative durations. Test-plan
-variables, outputs, resource changes, and assertion traversals stay with their
+variables, outputs, resource changes, and assertion paths stay with their
 matching test run before redacted output files are written. The CLI
 redacts the whole sensitive diagnostic. This keeps unmarked values in the same
 diagnostic out of every output file.

@@ -36,9 +36,9 @@
         <p class="lede">Review the failed sample now. Reset it at any time, or open your own compact record.</p>
       </section>
       <section class="reader" aria-labelledby="reader-title">
-        <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a sample record</h2></div><output id="status" class="status" aria-live="polite">Loading sample evidence</output></div>
-        <div id="result" class="result empty" aria-live="polite"><p>Loading the sample record.</p></div>
-        <label class="drop-zone" for="evidence-file"><span class="drop-mark" aria-hidden="true">↓</span><span><strong>Choose another compact record</strong><small>or drag it here · nothing is uploaded or saved</small></span><input id="evidence-file" type="file" accept="application/json,.json" /></label>
+        <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a compact record</h2></div><output id="status" class="status" aria-live="polite">Loading sample evidence</output></div>
+        <div id="result" class="result empty" aria-live="polite"><p>Loading the sample compact record.</p></div>
+        <label class="drop-zone" for="evidence-file"><span class="drop-mark" aria-hidden="true">↓</span><span><strong>Choose a compact record</strong><small>or drag it here · nothing is uploaded or saved</small></span><input id="evidence-file" type="file" accept="application/json,.json" /></label>
         <p class="file-error" id="file-error" role="alert" hidden></p>
       </section>
       <section class="format demo-next" aria-labelledby="next-title"><p class="eyebrow">Use the CLI</p><h2 id="next-title">Create evidence from a test run</h2><p>Run the bundled CLI demo without setup:</p><pre tabindex="0" aria-label="CLI demo command"><code>infra-test-evidence --demo</code></pre><p>The command writes a sample JUnit report, evidence JSON, and reviewer page to a new temporary directory.</p></section>

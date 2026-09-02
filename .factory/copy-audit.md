@@ -17,13 +17,15 @@ not sentences. No sentence exceeds 22 words. No banned marketing word appears.
 | The real packaged `--demo` flow converts two bundled checks without setup. | 10 | None |
 | Recorded from the packaged 0.1.0 binary. | 6 | None |
 | Temporary directory details are shortened. | 5 | None |
+| Recording complete. The JUnit report, evidence JSON, and reviewer page paths are shown. | 13 | None; recording status |
 | Your run details and checks will appear here. | 8 | None |
+| That file is not valid JSON. Choose a compact record or correct the file and try again. | 17 | None; file error |
 | Save OpenTofu or Terraform `test -json` output. | 7 | None |
 | Create a JUnit report, evidence JSON, and a reviewer page. | 10 | None |
-| Open the redacted page from disk or inspect a compact record above. | 12 | None |
+| Open the reviewer page from disk or inspect a compact record above. | 12 | None |
 | The CLI creates three output files: a JUnit report, evidence JSON, and a reviewer page. | 15 | None |
-| The reviewer page includes test inputs, assertion paths, redacted plan changes, failures, and provenance. | 13 | None |
-| The local reader also opens the compact JSON record shown below. | 10 | None |
+| The reviewer page includes test inputs, assertion paths, redacted plan changes, failures, and the input SHA-256. | 16 | None |
+| The local reader also opens the compact record shown below. | 10 | None |
 | Use `infra-test-evidence --json evidence.json` to strictly validate this compact record in CI. | 11 | None |
 | It does not upload files, run infrastructure changes, or replace a reviewer. | 12 | None |
 | It only converts and displays the evidence you provide. | 9 | None |
@@ -41,6 +43,6 @@ not sentences. No sentence exceeds 22 words. No banned marketing word appears.
 | Individual result | check |
 | Browser playback of the CLI | recording |
 
-Primary action: **Try it with sample data**. Real-data action: **Open your
-evidence file**. The first screen names the job, the infrastructure-module
+Primary action: **Try it with sample data**. Real-data action: **Open a compact
+record**. File action: **Choose a compact record**. The first screen names the job, the infrastructure-module
 maintainer, and both available first steps.

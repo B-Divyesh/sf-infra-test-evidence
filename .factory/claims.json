@@ -15,7 +15,7 @@
   },
   {
     "id": "cli-conversion",
-    "claim": "The CLI converts OpenTofu or Terraform test JSON into a JUnit report, evidence JSON, and reviewer page with reviewer details and provenance.",
+    "claim": "The CLI converts OpenTofu or Terraform test JSON into a JUnit report, evidence JSON, and reviewer page with reviewer details and an input SHA-256.",
     "where": "landing page and README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:cli-conversion'",
     "sandbox": "bundled OpenTofu sample; fresh temporary output directory"
@@ -29,10 +29,10 @@
   },
   {
     "id": "named-field-redaction",
-    "claim": "Values in fields named id, id_*, *_id, identifier, address, arn, resource_ref, or *_resource_ref are removed from JUnit, JSON, and HTML evidence.",
+    "claim": "Values in fields named id, id_*, *_id, identifier, address, arn, resource_ref, or *_resource_ref are removed from the JUnit report, evidence JSON, and reviewer page.",
     "where": "README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:named-field-redaction'",
-    "sandbox": "fresh packaged CLI; harmless opaque values under every documented field-name pattern; scan JUnit XML, evidence JSON, and reviewer HTML"
+    "sandbox": "fresh packaged CLI; harmless opaque values under every documented field-name pattern; scan JUnit report, evidence JSON, and reviewer page"
   },
   {
     "id": "resource-identifier-redaction",
@@ -46,7 +46,7 @@
     "claim": "AWS subnet and security-group IDs, Azure resource IDs, and GCP instance paths are removed from the JUnit report, evidence JSON, and reviewer page.",
     "where": "README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:cross-provider-resource-redaction'",
-    "sandbox": "fresh packaged CLI; one fixture puts all four identifiers in structured plan values and failure text; scan JUnit XML, reviewer JSON, and reviewer HTML"
+    "sandbox": "fresh packaged CLI; one fixture puts all four identifiers in structured plan values and failure text; scan JUnit report, evidence JSON, and reviewer page"
   },
   {
     "id": "sensitivity-fail-closed",
@@ -127,14 +127,14 @@
   },
   {
     "id": "site-demo",
-    "claim": "The first-screen demo opens a failed OpenTofu sample with redaction, provenance, and output files, then resets and exits to the real reader.",
+    "claim": "The first-screen demo opens a failed OpenTofu sample with redaction, an input SHA-256, and output files, then resets and exits to the real reader.",
     "where": "landing primary action, /demo banner, and .factory/demo.md",
     "test": "npm run qa:browser -- --grep '@claim:site-demo'",
     "sandbox": "fresh browser context entered from the landing primary action"
   },
   {
     "id": "demo-artifact-fidelity",
-    "claim": "The browser demo renders the failed check, assertion path, duration, redaction, and provenance from the bundled CLI conversion.",
+    "claim": "The browser demo renders the failed check, assertion path, duration, redaction, and input SHA-256 from the bundled CLI conversion.",
     "where": "/demo and .factory/demo.md",
     "test": "npm run qa:browser -- --grep '@claim:demo-artifact-fidelity'",
     "sandbox": "production site; request the shipped conversion artifact and compare each displayed proof field in a fresh browser context"

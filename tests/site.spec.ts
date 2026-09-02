@@ -23,6 +23,7 @@ test('@claim:site-demo opens, resets, and exits the in-memory sample from the fi
   for (const output of ['report.xml', 'evidence/evidence.json', 'evidence/index.html']) {
     await expect(proof.getByText(output, { exact: true })).toBeVisible();
   }
+  await expect(proof.locator('dt', { hasText: 'Input SHA-256' })).toBeVisible();
   await expect(proof.getByText(/SHA-256 85bfaca…0711522/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Recorded checks' })).toBeVisible();
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
@@ -41,7 +42,7 @@ test('@claim:site-demo opens, resets, and exits the in-memory sample from the fi
   });
   await expect(page.getByText('1 checks ready')).toBeVisible();
   await page.locator('#evidence-file').setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{') });
-  await expect(page.getByRole('alert')).toContainText('not valid JSON');
+  await expect(page.getByRole('alert')).toHaveText('That file is not valid JSON. Choose a compact record or correct the file and try again.');
   await page.getByRole('button', { name: 'Reset demo' }).click();
   await expect(page.getByText('2 checks ready')).toBeVisible();
   await expect(proof.getByText('blocks_public_ingress', { exact: true })).toBeVisible();
@@ -49,6 +50,26 @@ test('@claim:site-demo opens, resets, and exits the in-memory sample from the fi
   await page.getByRole('link', { name: 'Start for real' }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByText('Demo — sample data, nothing is saved')).toHaveCount(0);
+});
+
+test('keeps the compact-record name in every browser input state', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'Open a compact record' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Open a compact record' })).toBeVisible();
+  await expect(page.getByText('Choose a compact record', { exact: true })).toBeVisible();
+  await page.locator('#evidence-file').setInputFiles({ name: 'broken.json', mimeType: 'application/json', buffer: Buffer.from('{') });
+  await expect(page.getByRole('alert')).toHaveText('That file is not valid JSON. Choose a compact record or correct the file and try again.');
+
+  await page.goto('/demo/?demo=1');
+  await expect(page.getByRole('heading', { name: 'Open a compact record' })).toBeVisible();
+  await expect(page.getByText('Choose a compact record', { exact: true })).toBeVisible();
+});
+
+test('opens the isolated demo from the canonical query entry URL', async ({ page }) => {
+  await page.goto('/?demo=1');
+  await expect(page).toHaveURL(/\/demo\/\?demo=1$/);
+  await expect(page.getByText('Demo — sample data, nothing is saved')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Failed OpenTofu test ready for review' })).toBeVisible();
 });
 
 test('@claim:browser-record-import renders compact record details and validation errors', async ({ page }) => {
@@ -151,6 +172,7 @@ test('@claim:cli-recording plays the packaged CLI recording with a transcript an
   const transcript = page.locator('.recording-transcript');
   await expect(figure).toBeVisible();
   await expect(page.getByRole('button', { name: 'Replay recording' })).toBeVisible({ timeout: 5_000 });
+  await expect(page.locator('#recording-status')).toHaveText('Recording complete. The JUnit report, evidence JSON, and reviewer page paths are shown.');
   await expect(output).toContainText('JUnit report:');
   await expect(output).toContainText('Evidence JSON:');
   await expect(output).toContainText('Reviewer page:');

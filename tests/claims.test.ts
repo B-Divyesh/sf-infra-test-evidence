@@ -57,19 +57,28 @@ describe('release claims contract', () => {
 
   it('keeps reviewed copy specific, short, and consistent about compact records and output files', () => {
     const landing = readFileSync('index.html', 'utf8');
+    const demo = readFileSync('demo/index.html', 'utf8');
+    const privacy = readFileSync('privacy/index.html', 'utf8');
+    const runtime = readFileSync('src/main.ts', 'utf8');
     const readme = readFileSync('README.md', 'utf8');
     const errorPage = readFileSync('404.html', 'utf8');
+    const publicCopy = [landing, demo, privacy, runtime, readme, readFileSync('public/cli-demo.cast', 'utf8'), readFileSync('.factory/demo.md', 'utf8'), readFileSync('.factory/claims.json', 'utf8')].join('\n');
     expect(landing).toContain('See the CLI create a JUnit report, evidence JSON, and reviewer page');
     expect(landing).toContain('Generated files');
     expect(landing).toContain('three output files: a JUnit report, evidence JSON, and a reviewer page');
     expect(landing).toContain('Create a JUnit report, evidence JSON, and a reviewer page.');
-    expect(landing).toContain('compact record');
-    expect(landing).toContain('The local reader also opens the compact JSON record shown below:');
-    expect(landing).not.toContain('compact form');
-    expect(landing).not.toContain('compact portable record');
-    expect(landing).not.toContain('earlier workflows');
-    expect(landing).not.toContain('reviewer JSON');
-    expect(landing).not.toContain('static HTML page');
+    expect(landing).toContain('The local reader also opens the compact record shown below:');
+    expect(landing).toContain('failures, and the input SHA-256.');
+    expect(landing).toContain('Open a compact record');
+    expect(landing).toContain('Choose a compact record');
+    expect(demo).toContain('Open a compact record');
+    expect(demo).toContain('Choose a compact record');
+    expect(privacy).toContain('selected compact record');
+    expect(runtime).toContain('Recording complete. The JUnit report, evidence JSON, and reviewer page paths are shown.');
+    expect(runtime).toContain('Choose a compact record or correct the file and try again.');
+    for (const retiredTerm of ['compact JSON record', 'compact portable record', 'compact form', 'evidence file', 'evidence record', 'JSON evidence file', 'reviewer HTML', 'reviewer JSON', 'static HTML page', 'assertion traversals']) {
+      expect(publicCopy).not.toContain(retiredTerm);
+    }
     expect(landing).not.toContain('Small by design');
     expect(readme).toContain('`report.xml` contains the converted checks in JUnit XML.');
     expect(readme).toContain('It also redacts values marked by');
@@ -78,6 +87,7 @@ describe('release claims contract', () => {
     expect(readme).toContain('assertion path, failure, and redacted plan changes. It also records the input');
     expect(readme).not.toContain('assertion paths where emitted by the runner');
     expect(readme).not.toContain('source provenance');
+    expect(readme).not.toContain('assertion traversals');
     expect(readme).toContain('The converter rejects an event stream without one final supported summary.');
     expect(readme).toMatch(/This keeps unmarked values in the same\s+diagnostic out of every output file\./);
     expect(readme).not.toContain('restrictive browser response policies');

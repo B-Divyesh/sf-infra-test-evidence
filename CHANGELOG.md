@@ -4,8 +4,7 @@
 
 - Redact AWS subnet and security-group IDs, Azure resource IDs, and GCP
   instance paths in structured values and free text.
-- Scan JUnit XML, reviewer JSON, and reviewer HTML in one packaged
-  cross-provider claim.
+- Scan all three generated output files in one packaged cross-provider claim.
 
 ## 0.1.0 repair 7
 
@@ -28,5 +27,5 @@
 - Honor explicit OpenTofu/Terraform sensitivity metadata and fail closed on
   malformed sensitivity masks before creating reviewer artifacts.
 - Convert OpenTofu/Terraform JSON event streams to JUnit XML.
-- Generate self-contained redacted static evidence artifacts with provenance.
-- Strictly parse and validate the legacy portable evidence record.
+- Generate a self-contained reviewer page, evidence JSON, and an input hash.
+- Strictly parse and validate the compact record.

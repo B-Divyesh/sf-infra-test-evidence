@@ -1,1 +1,1 @@
-Convert infrastructure tests into a JUnit report, evidence JSON, and a reviewer page.
+Convert OpenTofu and Terraform tests into redacted evidence reviewers can inspect locally.
