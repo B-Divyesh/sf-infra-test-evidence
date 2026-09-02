@@ -75,7 +75,7 @@ test('@claim:browser-record-import renders compact record details and validation
 test('keeps the landing action and all three product facts in a 1440px first viewport', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'Try it with sample data' })).toBeVisible();
+  await expect(page.getByLabel('Turn infrastructure tests into reviewable evidence').getByRole('link', { name: 'Try it with sample data' })).toBeVisible();
   for (const fact of ['Runs in your browser', 'No trackers or uploads', 'Free under the MIT License']) {
     const box = await page.getByText(fact, { exact: true }).boundingBox();
     expect(box, `${fact} has a bounding box`).not.toBeNull();
@@ -156,6 +156,7 @@ test('publishes distinct demo, policy, discovery, and error documents', async ({
   await page.goto('/404.html');
   await expect(page).toHaveTitle('Page not found — Infra Test Evidence');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('This evidence page was not found');
+  await expect(page.locator('.error-code')).toHaveText('404 · PAGE NOT FOUND');
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://infra-test-evidence.sociobot.in/404.html');
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute('content', 'Page not found — Infra Test Evidence');
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');

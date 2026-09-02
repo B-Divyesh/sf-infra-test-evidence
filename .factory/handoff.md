@@ -1,52 +1,53 @@
-# Infra Test Evidence adversarial review 1 handoff — FAIL
+# Infra Test Evidence polish round 1 handoff — PASS
 
-**Work order:** `infra-test-evidence-review-1`
-
+**Work order:** `infra-test-evidence-polish-1`  
+**Repair commit:** `98308867579a4a7a554e5a2ff7ff4a874838360c` (pushed to `main`)  
+**Deployment:** `0eb1babf-6257-499a-bf4f-735867e5eec5`  
 **Live URL:** https://infra-test-evidence.sociobot.in
 
-**Review:** `.factory/review-1.md`
+## Done
 
-## What was done
+- Closed all 20 findings in `.factory/review-1.md`; the detailed finding map
+  is in `.factory/polish-1.md`.
+- Made `/?demo=1` redirect to the isolated demo. Its persistent banner offers
+  reset and real-mode exit, and its first viewport shows representative failed
+  conversion evidence, a redaction, source provenance, and output files.
+- Added the three missing claim contracts and exact tests for compact-record
+  import, help coverage, and two-input JSON validation.
+- Corrected first-screen copy, output terminology, 404 metadata/copy, desktop
+  fact visibility, and forward/back focus announcements.
+- Deployed `dist/site/` through the scoped Static Web App configuration.
 
-- Reviewed the live product cold at 390 × 844 and 1440 × 900.
-- Audited every landing and README sentence, plus headings, actions, and terms.
-- Exercised the one-click demo, local file replacement, reset, and exit.
-- Checked request origins, cookies, localStorage, sessionStorage, and IndexedDB.
-- Ran every command in `.factory/claims.json` separately from a clean clone.
-- Rechecked live routes, metadata, links, 404 behavior, focus, console output,
-  and Axe results.
-- Read the prior handoff and searched repository history for earlier review and
-  polish reports. None exist.
-- Did not modify product code, deployment, DNS, infrastructure, or resources.
+## Verification
 
-## Result
+From a fresh clone of the pushed repair commit, after `npm ci`, every command
+in `.factory/claims.json` passed individually. The same clean clone then passed
+`npm test`, `npm run check`, `npm run build`, `npm run qa:browser`, `npm run
+qa:a11y`, and `npm run package:check`.
 
-**FAIL:** 20 findings: 6 blocking and 14 minor.
+The final local browser suite passed 20 tests. Build output is 5.56 KB gzip JS
+and 3.37 KB gzip CSS. The live fleet verifier passed cold for `/` and
+`/?demo=1` with no console errors; both pages have title, `lang`, one h1,
+main, no missing alt text, and no unlabelled buttons. Live Axe scans for `/`,
+`/demo/`, `/privacy/`, `/terms/`, and `/404.html` have no serious or critical
+issues. The live 390 × 844 and 1440 × 900 demo checks keep the failed check,
+redaction, and output-file name above the fold.
 
-The primary blocker is the weak demo. Its seeded results begin below the first
-viewport at both requested sizes, and the two generic passing checks do not
-show the CLI's failed-test conversion, redaction, provenance, or output files.
-Five published capabilities are also missing from the claims inventory.
+Evidence lives in `/tmp/infra-test-evidence-live-9830886/` in this worker:
+fleet verifier reports and desktop/mobile screenshots for root and demo, plus
+focused `demo-390.png` and `demo-1440.png` first-viewport captures.
 
-All 15 declared claim commands passed. Same-origin/no-storage behavior passed,
-all crawled product links behaved as expected, normal live routes had no
-console errors, the fleet URL verifier passed, and live Axe scans found no
-violations.
-
-## Verify
+## Run and deploy
 
 ```sh
-cat .factory/review-1.md
 npm ci
 npm test
+npm run check
 npm run build
 npm run qa:browser
-/opt/fleet/lib/verify-url.sh https://infra-test-evidence.sociobot.in /tmp/ite-verify
+npm run qa:a11y
+npm run package:check
+/opt/fleet/lib/deploy-static.sh infra-test-evidence dist/site
 ```
 
-## Work left
-
-Resolve F-1-1 through F-1-20 in `.factory/review-1.md`, then rerun the entire
-review from a clean clone. Do not treat the passing declared tests as a pass
-until the demo, unlisted claims, copy, focus, first-screen facts, and 404
-metadata findings are gone.
+No known gaps remain.

@@ -55,6 +55,27 @@ describe('release claims contract', () => {
     expect(transcript).toContain('/evidence/evidence.json');
   });
 
+  it('keeps reviewed copy specific, short, and consistent about compact records and output files', () => {
+    const landing = readFileSync('index.html', 'utf8');
+    const readme = readFileSync('README.md', 'utf8');
+    const errorPage = readFileSync('404.html', 'utf8');
+    expect(landing).toContain('See the CLI create JUnit, JSON, and HTML');
+    expect(landing).toContain('Generated files');
+    expect(landing).toContain('three output files: a JUnit report, evidence JSON, and a reviewer page');
+    expect(landing).toContain('compact record');
+    expect(landing).not.toContain('compact form');
+    expect(landing).not.toContain('compact portable record');
+    expect(landing).not.toContain('Small by design');
+    expect(readme).toContain('`report.xml` contains the converted checks in JUnit XML.');
+    expect(readme).toContain('The CLI also redacts values marked by');
+    expect(readme).toContain('The converter rejects an event stream without one final supported summary.');
+    expect(readme).toMatch(/This keeps unmarked values in the same\s+diagnostic out of every output file\./);
+    expect(readme).not.toContain('restrictive browser response policies');
+    expect(readme).not.toContain('portable workflows');
+    expect(errorPage).toContain('404 · PAGE NOT FOUND');
+    expect(errorPage).not.toContain('NOT IN THE LEDGER');
+  });
+
   it('@claim:mit-license keeps package metadata and the shipped license on MIT', () => {
     const cargo = readFileSync('Cargo.toml', 'utf8');
     const license = readFileSync('LICENSE', 'utf8');
