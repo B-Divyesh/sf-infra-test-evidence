@@ -1,6 +1,6 @@
 # Polish round 2 — review findings closed
 
-**Repair commit:** `17462deb7815a31ca1a37e82b0b49399167b478c`  
+**Repair commits:** `17462deb7815a31ca1a37e82b0b49399167b478c`, `f6528ab943a7ef26a5f318903d1fb3c860ef5f19`  
 **Production URL:** https://infra-test-evidence.sociobot.in  
 **Deployment:** Azure Static Web Apps production deployment from `dist/site/` on 2026-09-02.  
 **Cold-browser evidence:** `/tmp/infra-test-evidence-polish2-live/landing-390.png`,
