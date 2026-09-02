@@ -6,7 +6,7 @@ infrastructure-module maintainers who need reviewers to inspect failed tests
 without uploading logs or plans.
 
 The companion landing page is https://infra-test-evidence.sociobot.in. It is a
-local reader for the compact record used by earlier workflows. Open
+local reader for the compact JSON record shown on the landing page. Open
 https://infra-test-evidence.sociobot.in/?demo=1 to try it with sample data.
 The landing page also includes a self-hosted recording and transcript of the
 packaged CLI demo.
@@ -38,15 +38,15 @@ infra-test-evidence --junit report.xml --evidence-dir evidence tofu-test.jsonl
 
 `report.xml` contains the converted checks in JUnit XML. `evidence/` contains
 `index.html` and `evidence.json`; open `evidence/index.html` directly or serve
-that directory statically. It records test-case inputs, assertion paths where
-emitted by the runner, redacted plan-change summaries, failures, and source
-provenance, including the input SHA-256. The reviewer page works from disk and
-makes no network requests.
+that directory statically. The reviewer page records each test’s inputs,
+assertion path, failure, and redacted plan changes. It also records the input
+SHA-256. The reviewer page works from disk and makes no network requests.
 
 Sensitive values and common AWS, Azure, and GCP resource identifiers are
 redacted before they reach the output files. This includes AWS ARNs, EC2,
 subnet, and security-group IDs, Azure resource IDs, and GCP instance paths.
-Resource-identifier-named fields are also redacted. The CLI also redacts values marked by
+The CLI also redacts values in fields named `id`, `id_*`, `*_id`, `identifier`,
+`address`, `arn`, `resource_ref`, or `*_resource_ref`. It also redacts values marked by
 `sensitive: true`, `before_sensitive`, `after_sensitive`, or
 `sensitive_values`. Malformed sensitivity metadata rejects the input and does
 not produce output files. See `examples/tofu-test.jsonl` for a complete sample.

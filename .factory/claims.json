@@ -1,42 +1,49 @@
 [
   {
     "id": "cli-demo",
-    "claim": "The CLI demo converts bundled sample data and prints paths to JUnit, JSON, and HTML outputs in a new temporary directory.",
+    "claim": "The CLI demo converts bundled sample data and prints paths to a JUnit report, evidence JSON, and reviewer page in a new temporary directory.",
     "where": "README demo section, /demo, and privacy page",
     "test": "npm run test:frontend -- --testNamePattern '@claim:cli-demo'",
     "sandbox": "fresh packaged CLI installation; isolated TMPDIR; no prepared input"
   },
   {
     "id": "cli-recording",
-    "claim": "The landing page plays a self-hosted recording of the packaged CLI demo with a transcript and a reduced-motion view.",
+    "claim": "The landing page plays a self-hosted recording of the packaged CLI demo with a transcript, JUnit report, evidence JSON, reviewer page, and reduced-motion view.",
     "where": "landing page and README",
     "test": "npm run qa:browser -- --grep '@claim:cli-recording'",
     "sandbox": "production site in fresh desktop and 390 px browsers; fetch the local cast; assert JUnit, JSON, and HTML output; reload with reduced motion"
   },
   {
     "id": "cli-conversion",
-    "claim": "The CLI converts OpenTofu or Terraform test JSON into JUnit and a reviewer page with reviewer details and provenance.",
+    "claim": "The CLI converts OpenTofu or Terraform test JSON into a JUnit report, evidence JSON, and reviewer page with reviewer details and provenance.",
     "where": "landing page and README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:cli-conversion'",
     "sandbox": "bundled OpenTofu sample; fresh temporary output directory"
   },
   {
     "id": "sensitive-redaction",
-    "claim": "Explicit sensitive values and resource identifiers are removed from every generated artifact.",
+    "claim": "Explicit sensitive values and resource identifiers are removed from every JUnit report, evidence JSON, and reviewer page.",
     "where": "landing page and README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:sensitive-redaction'",
     "sandbox": "packaged CLI; explicit-sensitive fixture with opaque sentinels; scan JUnit, JSON, and HTML"
   },
   {
+    "id": "named-field-redaction",
+    "claim": "Values in fields named id, id_*, *_id, identifier, address, arn, resource_ref, or *_resource_ref are removed from JUnit, JSON, and HTML evidence.",
+    "where": "README conversion section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:named-field-redaction'",
+    "sandbox": "fresh packaged CLI; harmless opaque values under every documented field-name pattern; scan JUnit XML, evidence JSON, and reviewer HTML"
+  },
+  {
     "id": "resource-identifier-redaction",
-    "claim": "AWS ARNs and EC2 instance identifiers are removed from generated JUnit, JSON, and HTML evidence.",
+    "claim": "AWS ARNs and EC2 instance identifiers are removed from the JUnit report, evidence JSON, and reviewer page.",
     "where": "README conversion section and evidence safety section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:resource-identifier-redaction'",
     "sandbox": "fresh packaged CLI; diagnostic and plan fixture containing an AWS ARN and EC2 identifier; scan every generated artifact"
   },
   {
     "id": "cross-provider-resource-redaction",
-    "claim": "AWS subnet and security-group IDs, Azure resource IDs, and GCP instance paths are removed from JUnit, JSON, and HTML evidence.",
+    "claim": "AWS subnet and security-group IDs, Azure resource IDs, and GCP instance paths are removed from the JUnit report, evidence JSON, and reviewer page.",
     "where": "README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:cross-provider-resource-redaction'",
     "sandbox": "fresh packaged CLI; one fixture puts all four identifiers in structured plan values and failure text; scan JUnit XML, reviewer JSON, and reviewer HTML"
@@ -53,7 +60,7 @@
     "claim": "Compact records are strictly validated and return documented process exit codes.",
     "where": "README validation section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:strict-validation'",
-    "sandbox": "valid sample, invalid record, and incorrect usage in a clean CLI process"
+    "sandbox": "valid compact record; malformed JSON; incomplete compact record; rejected output path; and incorrect usage in a clean packaged CLI process"
   },
   {
     "id": "malformed-duration-types",

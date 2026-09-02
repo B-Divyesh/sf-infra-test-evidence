@@ -171,17 +171,65 @@ describe('release CLI conversion', () => {
   });
 
   it('@claim:strict-validation validates compact records and returns documented exit codes', () => {
-    const valid = spawnSync(releaseCli, ['--json', 'examples/passing-evidence.json'], { cwd: root, encoding: 'utf8' });
-    expect(valid.status).toBe(0);
-    expect(JSON.parse(valid.stdout)).toEqual({ valid: true, checks: 2, errors: [] });
+    const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-strict-validation-'));
+    try {
+      const valid = spawnSync(releaseCli, ['--json', 'examples/passing-evidence.json'], { cwd: root, encoding: 'utf8' });
+      expect(valid.status).toBe(0);
+      expect(JSON.parse(valid.stdout)).toEqual({ valid: true, checks: 2, errors: [] });
 
-    const invalid = spawnSync(releaseCli, ['--json', 'examples/does-not-exist.json'], { cwd: root, encoding: 'utf8' });
-    expect(invalid.status).toBe(2);
-    expect(JSON.parse(invalid.stdout).valid).toBe(false);
+      const malformedJson = join(sandbox, 'malformed.json');
+      const incompleteRecord = join(sandbox, 'incomplete.json');
+      writeFileSync(malformedJson, '{"run":');
+      writeFileSync(incompleteRecord, JSON.stringify({ run: 'incomplete', environment: 'local', checks: [] }));
+      for (const [input, error] of [
+        [malformedJson, 'invalid JSON'],
+        [incompleteRecord, 'recordedAt'],
+      ]) {
+        const result = spawnSync(releaseCli, ['--json', input], { cwd: root, encoding: 'utf8' });
+        expect(result.status, input).toBe(2);
+        expect(JSON.parse(result.stdout)).toMatchObject({ valid: false, checks: 0 });
+        expect(JSON.parse(result.stdout).errors.join('\n')).toContain(error);
+      }
 
-    const usage = spawnSync(releaseCli, ['--demo', '--json'], { cwd: root, encoding: 'utf8' });
-    expect(usage.status).toBe(64);
-    expect(usage.stderr).toContain('--demo cannot be combined');
+      const outputFailure = spawnSync(releaseCli, ['--json', '--junit', sandbox, 'examples/passing-evidence.json'], { cwd: root, encoding: 'utf8' });
+      expect(outputFailure.status).toBe(2);
+      expect(JSON.parse(outputFailure.stdout)).toMatchObject({ valid: false, checks: 0 });
+      expect(JSON.parse(outputFailure.stdout).errors.join('\n')).toContain('cannot write JUnit report');
+
+      const usage = spawnSync(releaseCli, ['--demo', '--json'], { cwd: root, encoding: 'utf8' });
+      expect(usage.status).toBe(64);
+      expect(usage.stderr).toContain('--demo cannot be combined');
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
+  it('@claim:named-field-redaction removes harmless values stored under documented identifier field names from every release-package artifact', () => {
+    const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-named-fields-'));
+    const input = join(sandbox, 'named-fields.jsonl');
+    const junit = join(sandbox, 'report.xml');
+    const evidence = join(sandbox, 'evidence');
+    const sentinels = ['plain-id-value', 'plain-id-prefix-value', 'plain-id-suffix-value', 'plain-identifier-value', 'plain-address-value', 'plain-arn-value', 'plain-resource-ref-value', 'plain-resource-ref-suffix-value'];
+    try {
+      const fields = { id: sentinels[0], id_alias: sentinels[1], object_id: sentinels[2], identifier: sentinels[3], address: sentinels[4], arn: sentinels[5], resource_ref: sentinels[6], linked_resource_ref: sentinels[7] };
+      const events = [
+        { type: 'test_plan', '@testfile': 'tests/named-fields.tftest.hcl', '@testrun': 'named_fields', test_plan: { variables: fields } },
+        { type: 'test_run', '@testfile': 'tests/named-fields.tftest.hcl', '@testrun': 'named_fields', test_run: { status: 'pass', elapsed: 0.1 } },
+        { type: 'test_summary', test_summary: { status: 'pass' } },
+      ];
+      writeFileSync(input, events.map((event) => JSON.stringify(event)).join('\n'));
+      const result = spawnSync(releaseCli, ['--json', '--junit', junit, '--evidence-dir', evidence, input], { cwd: root, encoding: 'utf8' });
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({ valid: true, checks: 1, errors: [] });
+      for (const artifact of [junit, join(evidence, 'evidence.json'), join(evidence, 'index.html')]) {
+        const contents = readFileSync(artifact, 'utf8');
+        for (const sentinel of sentinels) expect(contents).not.toContain(sentinel);
+      }
+      expect(readFileSync(join(evidence, 'evidence.json'), 'utf8')).toContain('[REDACTED]');
+      expect(readFileSync(join(evidence, 'index.html'), 'utf8')).toContain('[REDACTED]');
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
   });
 
   it('@claim:malformed-duration-types rejects string and boolean duration values instead of treating them as missing', () => {

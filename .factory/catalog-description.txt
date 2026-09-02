@@ -1,1 +1,1 @@
-Turn infrastructure tests into redacted JUnit, JSON, and reviewer evidence.
+Convert infrastructure tests into a JUnit report, evidence JSON, and a reviewer page.

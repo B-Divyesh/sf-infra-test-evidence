@@ -19,11 +19,11 @@ not sentences. No sentence exceeds 22 words. No banned marketing word appears.
 | Temporary directory details are shortened. | 5 | None |
 | Your run details and checks will appear here. | 8 | None |
 | Save OpenTofu or Terraform `test -json` output. | 7 | None |
-| Create JUnit, reviewer JSON, and a static HTML page. | 9 | None |
+| Create a JUnit report, evidence JSON, and a reviewer page. | 10 | None |
 | Open the redacted page from disk or inspect a compact record above. | 12 | None |
 | The CLI creates three output files: a JUnit report, evidence JSON, and a reviewer page. | 15 | None |
 | The reviewer page includes test inputs, assertion paths, redacted plan changes, failures, and provenance. | 13 | None |
-| The local reader also accepts the compact record used by earlier workflows. | 11 | None |
+| The local reader also opens the compact JSON record shown below. | 10 | None |
 | Use `infra-test-evidence --json evidence.json` to strictly validate this compact record in CI. | 11 | None |
 | It does not upload files, run infrastructure changes, or replace a reviewer. | 12 | None |
 | It only converts and displays the evidence you provide. | 9 | None |

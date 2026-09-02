@@ -20,12 +20,14 @@ test('@claim:site-demo opens, resets, and exits the in-memory sample from the fi
   await expect(proof.getByText('blocks_public_ingress', { exact: true })).toBeVisible();
   await expect(proof.getByText('aws_security_group.web.ingress', { exact: true })).toBeVisible();
   await expect(proof.getByText('[REDACTED]', { exact: true })).toBeVisible();
-  await expect(proof.getByText('report.xml', { exact: true })).toBeVisible();
+  for (const output of ['report.xml', 'evidence/evidence.json', 'evidence/index.html']) {
+    await expect(proof.getByText(output, { exact: true })).toBeVisible();
+  }
   await expect(proof.getByText(/SHA-256 85bfaca…0711522/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Recorded checks' })).toBeVisible();
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
     await page.setViewportSize(viewport);
-    for (const text of ['blocks_public_ingress', '[REDACTED]', 'report.xml']) {
+    for (const text of ['blocks_public_ingress', '[REDACTED]', 'report.xml', 'evidence/evidence.json', 'evidence/index.html']) {
       const box = await proof.getByText(text, { exact: true }).first().boundingBox();
       expect(box, `${text} has a bounding box`).not.toBeNull();
       expect(box!.y + box!.height, `${text} is in the ${viewport.width}px first viewport`).toBeLessThanOrEqual(viewport.height);
