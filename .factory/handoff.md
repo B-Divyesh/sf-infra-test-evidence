@@ -66,8 +66,8 @@ npm run qa:a11y
 - All 15 exact claim commands passed individually from the clean install.
 - `npm run check` passed ESLint, TypeScript, 6 Rust tests, and 20 Vitest
   tests. Rust formatting and warnings-as-errors Clippy passed.
-- `cargo package --locked` verified 54 files at 315.6 KiB (89.9 KiB
-  compressed). `npm pack --dry-run` verified 50 files at 66.0 kB (217.3 kB
+- `cargo package --locked` verified 54 files at 319.4 KiB (91.5 KiB
+  compressed). `npm pack --dry-run` verified 50 files at 67.5 kB (221.2 kB
   unpacked). Nothing was published.
 - The consumer check returned `{"checks":2,"errors":[],"valid":true}`.
 - The production build emitted 5.31 kB JS (2.21 kB gzip) and 10.61 kB CSS
