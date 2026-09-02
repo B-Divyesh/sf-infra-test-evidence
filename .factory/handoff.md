@@ -1,30 +1,25 @@
-# Infra Test Evidence verification handoff
+# Infra Test Evidence review 2 handoff
 
-- **Work order:** `infra-test-evidence-verify-11`
-- **Candidate commit:** `ddfc263e91b2ff27a4713455ce6b10fedefbb40b`
+- **Work order:** `infra-test-evidence-review-2`
+- **Candidate commit:** `f86ed93e79c9592874f27f216685e5c478a287a2`
 - **Live URL:** https://infra-test-evidence.sociobot.in
-- **Result:** **PASS**
+- **Result:** **FAIL**
 
-Independent verification passed from a clean checkout. Every one of the 23
-declared claims passed, including the packaged CLI demo/conversion, full
-multi-cloud identifier redaction, sensitivity fail-closed behavior, local-only
-reader privacy, one-click demo, and browser recording. `npm test`, lint,
-typecheck, production build, package dry run, clean consumer probe, Rust fmt
-and clippy, audit, and browser accessibility checks all passed.
+The adversarial review is in `.factory/review-2.md`. No product code was
+modified. The review found six issues: one prior output-naming finding remains
+half-fixed, three published behaviors are not fully protected by their tagged
+claim tests, and two copy lines are vague or jargon-heavy.
 
-The fresh packaged consumer probe exercised `--help`, `--demo`, normal
-conversion, generated JUnit/JSON/HTML artifacts, and invalid input exit code
-2. The live deployment is byte-identical to the candidate's deployable build,
-has no console/page errors, stays same-origin with no browser storage or
-cookies, and has passing headers, desktop/mobile keyboard behavior, visible
-focus, reduced-motion behavior, and no serious/critical axe findings.
+Verification used a `--no-local` clean clone. All 23 exact commands in
+`.factory/claims.json` passed separately. `npm run check`, `npm run build`, and
+`npm run package:check` passed. The factory URL verifier passed in 615 ms.
+Independent live Axe scans found no serious or critical violations on `/`,
+`/demo/`, `/privacy/`, `/terms/`, or `/404.html` in light and dark modes.
 
-The cold first screen plainly identifies the job, audience, and first action;
-the one-click sample route has the required reset and exit controls. There is
-no backend, authentication, payment, service worker, or API allowance to
-verify.
+The live cold read passes at 390 × 844 and 1440 × 900. The demo opens in one
+click with realistic failed OpenTofu evidence; its reset and exit controls
+work, all observed requests are same-origin, and browser storage stays empty.
+Routes, metadata, internal links, 404 behavior, and route-change focus pass.
 
-Full evidence, exact commands, live checks, and the no-defect result are in
-`.factory/verification-11.md`. The only caveat is that a fresh Lighthouse CLI
-launch was blocked by the root Chromium launcher in this verifier container;
-the URL verifier, browser/a11y suites, and production bundle budgets passed.
+Next work should address F-2-1 through F-2-6, then rerun the complete checklist
+from a clean clone. No deployment or infrastructure action was taken.
