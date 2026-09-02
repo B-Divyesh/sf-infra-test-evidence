@@ -2,9 +2,16 @@
   {
     "id": "cli-demo",
     "claim": "The CLI demo converts bundled sample data and prints paths to JUnit, JSON, and HTML outputs in a new temporary directory.",
-    "where": "README demo section and /demo",
+    "where": "README demo section, /demo, and privacy page",
     "test": "npm run test:frontend -- --testNamePattern '@claim:cli-demo'",
     "sandbox": "fresh packaged CLI installation; isolated TMPDIR; no prepared input"
+  },
+  {
+    "id": "cli-recording",
+    "claim": "The landing page plays a self-hosted recording of the packaged CLI demo with a transcript and a reduced-motion view.",
+    "where": "landing page and README",
+    "test": "npm run qa:browser -- --grep '@claim:cli-recording'",
+    "sandbox": "production site in fresh desktop and 390 px browsers; fetch the local cast; assert JUnit, JSON, and HTML output; reload with reduced motion"
   },
   {
     "id": "cli-conversion",
@@ -35,11 +42,39 @@
     "sandbox": "valid sample, invalid record, and incorrect usage in a clean CLI process"
   },
   {
+    "id": "event-stream-validation",
+    "claim": "Event streams are rejected unless one supported summary is final, every completed run has a supported status, and every duration is non-negative.",
+    "where": "README evidence safety section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:event-stream-validation'",
+    "sandbox": "fresh packaged CLI installation; six malformed event streams; assert exit 2, exact error, and no reviewer artifacts"
+  },
+  {
+    "id": "run-correlation",
+    "claim": "Interleaved test-plan inputs, outputs, resource changes, diagnostics, and assertion paths stay with their matching test run.",
+    "where": "README evidence safety section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:run-correlation'",
+    "sandbox": "fresh packaged CLI installation; two deliberately interleaved runs with unique sentinels; inspect each generated case"
+  },
+  {
+    "id": "sensitive-diagnostics",
+    "claim": "A diagnostic containing sensitive data is redacted as a whole in every reviewer artifact.",
+    "where": "README evidence safety section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:sensitive-diagnostics'",
+    "sandbox": "fresh packaged CLI installation; real-style sensitive diagnostic; scan generated JSON and HTML"
+  },
+  {
     "id": "conversion-only",
     "claim": "The CLI only converts existing test output; it does not invoke OpenTofu or Terraform or contact remote services.",
     "where": "landing page boundaries and README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:conversion-only'",
     "sandbox": "packaged CLI in an isolated Linux process; a preload guard terminates and records any child-process or network-socket call; instrumented tofu and terraform commands are first on PATH"
+  },
+  {
+    "id": "requested-path-writes",
+    "claim": "Conversion mode writes only to standard output and the paths supplied with --junit and --evidence-dir.",
+    "where": "privacy page",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:requested-path-writes'",
+    "sandbox": "fresh packaged CLI installation; isolated working and temporary directory; preload guard rejects write-open or mkdir calls outside the exact output allowlist"
   },
   {
     "id": "artifact-private",

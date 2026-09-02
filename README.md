@@ -8,6 +8,8 @@ without uploading logs or plans.
 The companion landing page is https://infra-test-evidence.sociobot.in. It is a
 local reader for the compact evidence record used by older workflows. Open
 https://infra-test-evidence.sociobot.in/demo/ to try it with sample data.
+The landing page also includes a self-hosted recording and transcript of the
+packaged CLI demo.
 
 ## Install
 

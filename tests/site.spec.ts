@@ -59,6 +59,30 @@ test('@claim:reader-private keeps local evidence off the network and out of brow
   }
 });
 
+test('@claim:cli-recording plays the packaged CLI recording with a transcript and reduced-motion fallback', async ({ page, request }) => {
+  const recording = await request.get('/cli-demo.cast');
+  expect(recording.status()).toBe(200);
+  expect(await recording.text()).toContain('Demo complete: 2 checks converted');
+
+  await page.goto('/');
+  const figure = page.getByRole('figure', { name: /Watch the three outputs appear/ });
+  const output = page.locator('#recording-output');
+  const transcript = page.locator('.recording-transcript');
+  await expect(figure).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Replay recording' })).toBeVisible({ timeout: 5_000 });
+  await expect(output).toContainText('JUnit report:');
+  await expect(output).toContainText('Evidence JSON:');
+  await expect(output).toContainText('Reviewer page:');
+  await transcript.getByText('Read the recording transcript').click();
+  await expect(transcript).toContainText('evidence/evidence.json');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Show recording without motion' })).toBeVisible();
+  await expect(page.locator('#recording-status')).toHaveText(/complete recording is shown without animation/);
+  await expect(output).toContainText('Demo complete: 2 checks converted');
+});
+
 test('publishes distinct demo, policy, discovery, and error documents', async ({ page, request }) => {
   const errors: string[] = [];
   page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });

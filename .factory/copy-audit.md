@@ -1,6 +1,6 @@
 # Landing copy audit
 
-Audited 2026-08-30. Hyphenated terms and commands count as one word. Navigation,
+Audited 2026-09-02. Hyphenated terms and commands count as one word. Navigation,
 field labels, status labels, and code samples are listed as interface terms,
 not sentences. No sentence exceeds 22 words. No banned marketing word appears.
 
@@ -13,6 +13,10 @@ not sentences. No sentence exceeds 22 words. No banned marketing word appears.
 | Runs in your browser | 4 | None |
 | No trackers or uploads | 4 | None |
 | Free under the MIT License | 5 | None |
+| Watch the three outputs appear | 5 | None |
+| The real packaged `--demo` flow converts two bundled checks without setup. | 10 | None |
+| Recorded from the packaged 0.1.0 binary. | 6 | None |
+| Temporary directory details are shortened. | 5 | None |
 | Your run details and checks will appear here. | 8 | None |
 | Save OpenTofu or Terraform `test -json` output. | 7 | None |
 | Create JUnit, reviewer JSON, and a static HTML page. | 9 | None |
@@ -35,6 +39,7 @@ not sentences. No sentence exceeds 22 words. No banned marketing word appears.
 | Generated XML | JUnit report |
 | No-setup mode | demo |
 | Individual result | check |
+| Browser playback of the CLI | recording |
 
 Primary action: **Try it with sample data**. Real-data action: **Open your
 evidence file**. The first screen names the job, the infrastructure-module

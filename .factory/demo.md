@@ -25,3 +25,9 @@ The sample is compiled into the binary from `examples/tofu-test.jsonl`. Each
 run creates a unique `infra-test-evidence-demo-*` directory under the operating
 system temporary directory. It writes the sample input, `report.xml`,
 `evidence/evidence.json`, and `evidence/index.html`, then prints those paths.
+
+The landing page plays `public/cli-demo.cast`, a self-hosted asciinema v2
+recording captured from a crate packaged and installed locally on 2026-09-02.
+Only the unique temporary-directory suffix was shortened to an ellipsis. The
+page includes a complete text transcript, pause/replay control, and an instant
+full-output view when reduced motion is requested.

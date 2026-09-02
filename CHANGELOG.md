@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0 repair 7
+
+- Add an accessible, self-hosted recording of the packaged CLI demo.
+- Enforce a final event-stream summary and retain plan evidence per test run.
+- Add packaged claim tests for event validation, correlation, diagnostic redaction, and requested-path writes.
+
 ## 0.1.0 repair 6
 
 - Make every Playwright claim command build its own production site from a clean checkout.

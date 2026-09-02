@@ -8,6 +8,9 @@ const error = document.querySelector<HTMLElement>('#file-error')!;
 const status = document.querySelector<HTMLOutputElement>('#status')!;
 const dropZone = document.querySelector<HTMLElement>('.drop-zone')!;
 const resetDemo = document.querySelector<HTMLButtonElement>('#reset-demo');
+const recordingOutput = document.querySelector<HTMLElement>('#recording-output code');
+const recordingControl = document.querySelector<HTMLButtonElement>('#recording-control');
+const recordingStatus = document.querySelector<HTMLElement>('#recording-status');
 
 function text(value: unknown, fallback = 'Not recorded'): string { return typeof value === 'string' && value.trim() ? value : fallback; }
 function escapeHtml(value: string): string { const node = document.createElement('span'); node.textContent = value; return node.innerHTML; }
@@ -28,3 +31,80 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging
 dropZone.addEventListener('drop', (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); const file = event.dataTransfer?.files[0]; if (file) void readFile(file); });
 resetDemo?.addEventListener('click', () => render(sample));
 if (document.body.dataset.mode === 'demo') render(sample);
+
+type CastEvent = [number, 'o', string];
+
+async function prepareRecording(): Promise<void> {
+  if (!recordingOutput || !recordingControl || !recordingStatus) return;
+  try {
+    const response = await fetch('/cli-demo.cast');
+    if (!response.ok) throw new Error('recording unavailable');
+    const lines = (await response.text()).trim().split('\n');
+    const events = lines.slice(1).map((line) => JSON.parse(line) as CastEvent).filter((event) => event[1] === 'o');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let position = 0;
+    let timer: number | undefined;
+    let playing = false;
+
+    const finish = (message: string): void => {
+      recordingOutput.textContent = events.map((event) => event[2]).join('');
+      position = events.length;
+      playing = false;
+      recordingControl.textContent = reducedMotion.matches ? 'Show recording without motion' : 'Replay recording';
+      recordingStatus.textContent = message;
+    };
+    const schedule = (): void => {
+      if (!playing) return;
+      if (position >= events.length) {
+        finish('Recording complete. JUnit, reviewer HTML, and evidence JSON paths are shown.');
+        return;
+      }
+      const previousTime = position === 0 ? 0 : events[position - 1][0];
+      const delay = Math.max(80, (events[position][0] - previousTime) * 700);
+      timer = window.setTimeout(() => {
+        recordingOutput.textContent += events[position][2];
+        position += 1;
+        schedule();
+      }, delay);
+    };
+    const start = (): void => {
+      if (reducedMotion.matches) {
+        finish('Reduced motion is on. The complete recording is shown without animation.');
+        return;
+      }
+      if (position >= events.length) {
+        position = 0;
+        recordingOutput.textContent = '';
+      }
+      playing = true;
+      recordingControl.textContent = 'Pause recording';
+      recordingStatus.textContent = 'Recording playing';
+      schedule();
+    };
+    recordingControl.addEventListener('click', () => {
+      if (reducedMotion.matches) {
+        finish('Reduced motion is on. The complete recording is shown without animation.');
+      } else if (playing) {
+        window.clearTimeout(timer);
+        playing = false;
+        recordingControl.textContent = 'Play recording';
+        recordingStatus.textContent = 'Recording paused';
+      } else {
+        start();
+      }
+    });
+    reducedMotion.addEventListener('change', () => {
+      window.clearTimeout(timer);
+      if (reducedMotion.matches) finish('Reduced motion is on. The complete recording is shown without animation.');
+      else start();
+    });
+    recordingOutput.textContent = '';
+    start();
+  } catch {
+    recordingControl.disabled = true;
+    recordingControl.textContent = 'Recording unavailable';
+    recordingStatus.textContent = 'The visual recording could not load. The full transcript follows.';
+  }
+}
+
+void prepareRecording();

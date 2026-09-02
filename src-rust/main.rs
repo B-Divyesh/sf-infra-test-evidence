@@ -21,6 +21,7 @@ struct Case {
     duration: Option<f64>,
     inputs: Vec<String>,
     assertions: Vec<String>,
+    plans: Vec<String>,
     failure: Option<String>,
 }
 #[derive(Clone, Debug)]
@@ -301,6 +302,7 @@ fn legacy(object: &Map<String, Value>, input_digest: String) -> Result<Report, V
                     field(object, "environment").unwrap_or_default()
                 )],
                 assertions: Vec::new(),
+                plans: Vec::new(),
             });
         }
     }
@@ -418,7 +420,7 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
     let mut diagnostics = Vec::new();
     let mut global_plans = Vec::new();
     let mut summary = None;
-    for value in events {
+    for (event_index, value) in events.iter().enumerate() {
         let Some(event) = value.as_object() else {
             errors.push("every event must be a JSON object".to_owned());
             continue;
@@ -548,7 +550,7 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                     errors.push(format!("test_summary has an unsupported status {raw}"));
                     continue;
                 };
-                if summary.replace(state).is_some() {
+                if summary.replace((state, event_index)).is_some() {
                     errors.push("event stream contains more than one test_summary".to_owned());
                 }
             }
@@ -567,10 +569,13 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
     if finished.is_empty() {
         errors.push("no completed OpenTofu/Terraform test_run events were found".to_owned());
     }
-    let Some(summary) = summary else {
+    let Some((summary, summary_index)) = summary else {
         errors.push("event stream ended without a final test_summary".to_owned());
         return Err(errors);
     };
+    if summary_index + 1 != events.len() {
+        errors.push("test_summary must be the final event in the stream".to_owned());
+    }
     if !errors.is_empty() {
         return Err(errors);
     }
@@ -595,7 +600,8 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
         } else {
             inline_failure.or_else(|| context.diagnostics.first().cloned())
         };
-        plans.extend(context.plans);
+        let case_plans = context.plans;
+        plans.extend(case_plans.clone());
         cases.push(Case {
             name,
             class_name: context.path.unwrap_or_else(|| "terraform-test".to_owned()),
@@ -603,6 +609,7 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
             duration: elapsed,
             inputs,
             assertions: context.assertions,
+            plans: case_plans,
             failure,
         });
     }
@@ -715,7 +722,7 @@ fn junit(report: &Report) -> String {
     xml
 }
 fn artifact(report: &Report) -> Value {
-    let cases: Vec<Value> = report.cases.iter().map(|case| json!({"name":case.name,"status":case.status,"durationSeconds":case.duration,"inputs":case.inputs,"assertionPaths":case.assertions,"failure":case.failure})).collect();
+    let cases: Vec<Value> = report.cases.iter().map(|case| json!({"name":case.name,"status":case.status,"durationSeconds":case.duration,"inputs":case.inputs,"assertionPaths":case.assertions,"planSummary":case.plans,"failure":case.failure})).collect();
     json!({"schemaVersion":1,"provenance":{"tool":format!("infra-test-evidence {VERSION}"),"sourceKind":report.source,"inputSha256":report.digest,"redaction":"Sensitive values and resource identifiers are redacted by default."},"testCases":cases,"assertionPaths":report.cases.iter().flat_map(|case|case.assertions.clone()).collect::<Vec<_>>(),"planSummary":report.plans,"failures":report.cases.iter().filter(|case|case.status!="pass").map(|case|json!({"test":case.name,"status":case.status,"message":case.failure})).collect::<Vec<_>>(),"diagnostics":report.diagnostics})
 }
 fn page(artifact: &Value) -> String {
@@ -725,7 +732,7 @@ fn page(artifact: &Value) -> String {
         .replace('\u{2028}', "\\u2028")
         .replace('\u{2029}', "\\u2029");
     format!(
-        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Infrastructure test evidence</title><style>body{{margin:0;background:#f7f2e9;color:#1d2933;font:16px/1.5 system-ui,sans-serif}}main{{max-width:1000px;margin:auto;padding:32px 20px}}h1{{color:#193b58}}section{{background:#fffdf8;border-left:5px solid #193b58;padding:18px;margin:18px 0}}pre{{overflow:auto;background:#e9e1d4;padding:14px}}pre:focus{{outline:3px solid #193b58;outline-offset:3px}}.fail{{color:#8f261c;font-weight:700}}.pass{{color:#18543b;font-weight:700}}</style></head><body><main><p>LOCAL, REDACTED REVIEW ARTIFACT</p><h1>Infrastructure test evidence</h1><p>This artifact is static. It makes no network requests.</p><section><h2>Provenance</h2><pre id=\"provenance\" tabindex=\"0\" aria-label=\"Evidence provenance\"></pre></section><section><h2>Test-case inputs</h2><div id=\"cases\"></div></section><section><h2>Assertion paths</h2><pre id=\"assertions\" tabindex=\"0\" aria-label=\"Assertion paths\"></pre></section><section><h2>Redacted plan summary</h2><pre id=\"plan\" tabindex=\"0\" aria-label=\"Redacted plan summary\"></pre></section><section><h2>Failures</h2><pre id=\"failures\" tabindex=\"0\" aria-label=\"Test failures\"></pre></section></main><script>const evidence={payload};const write=(id,value)=>document.getElementById(id).textContent=JSON.stringify(value,null,2);write('provenance',evidence.provenance);write('assertions',evidence.assertionPaths);write('plan',evidence.planSummary);write('failures',evidence.failures);document.getElementById('cases').replaceChildren(...evidence.testCases.map(c=>{{const el=document.createElement('article');el.innerHTML='<h3></h3><p></p><pre tabindex=\"0\" aria-label=\"Test case details\"></pre>';el.querySelector('h3').textContent=c.name;el.querySelector('h3').className=c.status==='pass'?'pass':'fail';el.querySelector('p').textContent='Status: '+c.status;el.querySelector('pre').textContent=JSON.stringify({{inputs:c.inputs,assertionPaths:c.assertionPaths,failure:c.failure}},null,2);return el;}}));</script></body></html>"
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Infrastructure test evidence</title><style>body{{margin:0;background:#f7f2e9;color:#1d2933;font:16px/1.5 system-ui,sans-serif}}main{{max-width:1000px;margin:auto;padding:32px 20px}}h1{{color:#193b58}}section{{background:#fffdf8;border-left:5px solid #193b58;padding:18px;margin:18px 0}}pre{{overflow:auto;background:#e9e1d4;padding:14px}}pre:focus{{outline:3px solid #193b58;outline-offset:3px}}.fail{{color:#8f261c;font-weight:700}}.pass{{color:#18543b;font-weight:700}}</style></head><body><main><p>LOCAL, REDACTED REVIEW ARTIFACT</p><h1>Infrastructure test evidence</h1><p>This artifact is static. It makes no network requests.</p><section><h2>Provenance</h2><pre id=\"provenance\" tabindex=\"0\" aria-label=\"Evidence provenance\"></pre></section><section><h2>Test-case inputs</h2><div id=\"cases\"></div></section><section><h2>Assertion paths</h2><pre id=\"assertions\" tabindex=\"0\" aria-label=\"Assertion paths\"></pre></section><section><h2>Redacted plan summary</h2><pre id=\"plan\" tabindex=\"0\" aria-label=\"Redacted plan summary\"></pre></section><section><h2>Failures</h2><pre id=\"failures\" tabindex=\"0\" aria-label=\"Test failures\"></pre></section></main><script>const evidence={payload};const write=(id,value)=>document.getElementById(id).textContent=JSON.stringify(value,null,2);write('provenance',evidence.provenance);write('assertions',evidence.assertionPaths);write('plan',evidence.planSummary);write('failures',evidence.failures);document.getElementById('cases').replaceChildren(...evidence.testCases.map(c=>{{const el=document.createElement('article');el.innerHTML='<h3></h3><p></p><pre tabindex=\"0\" aria-label=\"Test case details\"></pre>';el.querySelector('h3').textContent=c.name;el.querySelector('h3').className=c.status==='pass'?'pass':'fail';el.querySelector('p').textContent='Status: '+c.status;el.querySelector('pre').textContent=JSON.stringify({{inputs:c.inputs,assertionPaths:c.assertionPaths,planSummary:c.planSummary,failure:c.failure}},null,2);return el;}}));</script></body></html>"
     )
 }
 fn output(

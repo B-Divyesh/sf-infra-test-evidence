@@ -1,0 +1,8 @@
+{"version":2,"width":100,"height":12,"timestamp":1788310103,"env":{"SHELL":"/bin/sh","TERM":"xterm-256color"},"title":"Packaged infra-test-evidence 0.1.0 --demo"}
+[0.2,"o","$ infra-test-evidence --demo\r\n"]
+[0.65,"o","Demo complete: 2 checks converted\r\n"]
+[0.85,"o","Demo directory: /tmp/infra-test-evidence-demo-…\r\n"]
+[1.05,"o","Sample input: /tmp/infra-test-evidence-demo-…/tofu-test.jsonl\r\n"]
+[1.25,"o","JUnit report: /tmp/infra-test-evidence-demo-…/report.xml\r\n"]
+[1.45,"o","Reviewer page: /tmp/infra-test-evidence-demo-…/evidence/index.html\r\n"]
+[1.65,"o","Evidence JSON: /tmp/infra-test-evidence-demo-…/evidence/evidence.json\r\n"]

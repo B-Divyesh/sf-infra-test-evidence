@@ -30,8 +30,9 @@ stacks the metadata and check duration; controls keep a 44px target. Result
 status uses words in addition to color. A visible focus ring and skip link
 serve keyboard users.
 
-The only transition is the drop-zone state at 200ms. Under reduced motion all
-transitions are effectively instant. There is no looping or decorative motion.
+The drop-zone state transitions in 200ms. The packaged CLI recording reveals
+captured output once, with pause and replay controls. Under reduced motion it
+shows the complete output immediately. Nothing loops or flashes.
 
 ## Asset provenance
 
@@ -41,3 +42,8 @@ a hand-authored SVG ledger illustration, converted locally to PNG for preview
 compatibility. The apple-touch icon is rendered locally from the original SVG
 favicon. Both assets are original work for this product and use the palette
 above; no third-party source or model was used.
+
+`public/cli-demo.cast` was captured locally from the crate produced by
+`cargo package --locked` and installed with `cargo install --path`. It is an
+asciinema v2 text recording, not generated imagery. Only its unique temporary
+path was shortened. The visible player is original HTML, CSS, and TypeScript.

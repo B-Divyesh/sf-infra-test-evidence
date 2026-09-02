@@ -51,6 +51,10 @@ describe('release CLI conversion', () => {
       expect(readFileSync(join(directory!, 'report.xml'), 'utf8')).toContain('<testsuite');
       expect(JSON.parse(readFileSync(join(directory!, 'evidence/evidence.json'), 'utf8')).testCases).toHaveLength(2);
       expect(readFileSync(join(directory!, 'evidence/index.html'), 'utf8')).toContain('Infrastructure test evidence');
+      const recorded = readFileSync(join(root, 'public/cli-demo.cast'), 'utf8').trim().split('\n').slice(1)
+        .map((line) => (JSON.parse(line) as [number, string, string])[2]).join('').replaceAll('\r\n', '\n').trim();
+      const captured = `$ infra-test-evidence --demo\n${result.replaceAll(directory!, '/tmp/infra-test-evidence-demo-…')}`.trim();
+      expect(recorded).toBe(captured);
     } finally {
       rmSync(temporaryRoot, { recursive: true, force: true });
     }
@@ -110,6 +114,73 @@ describe('release CLI conversion', () => {
     expect(usage.stderr).toContain('--demo cannot be combined');
   });
 
+  it('@claim:event-stream-validation rejects incomplete, repeated, late, unsupported, and negative stream results', () => {
+    const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-stream-validation-'));
+    const run = { type: 'test_run', '@testfile': 'tests/main.tftest.hcl', '@testrun': 'main', test_run: { status: 'pass', elapsed: 0.25 } };
+    const summary = { type: 'test_summary', test_summary: { status: 'pass' } };
+    const cases = [
+      { name: 'missing-summary', events: [run], error: 'event stream ended without a final test_summary' },
+      { name: 'repeated-summary', events: [run, summary, summary], error: 'event stream contains more than one test_summary' },
+      { name: 'late-summary', events: [run, summary, { type: 'log', message: 'late output' }], error: 'test_summary must be the final event' },
+      { name: 'unsupported-summary', events: [run, { type: 'test_summary', test_summary: { status: 'unknown' } }], error: 'test_summary has an unsupported status unknown' },
+      { name: 'unsupported-run', events: [{ ...run, test_run: { status: 'unknown', elapsed: 0.25 } }, { ...summary, test_summary: { status: 'fail' } }], error: 'test_run has an unsupported status unknown' },
+      { name: 'negative-duration', events: [{ ...run, test_run: { status: 'pass', elapsed: -0.25 } }, summary], error: 'test_run elapsed must be a non-negative finite number' },
+    ];
+    try {
+      for (const item of cases) {
+        const input = join(sandbox, `${item.name}.jsonl`);
+        const junit = join(sandbox, `${item.name}.xml`);
+        const evidence = join(sandbox, `${item.name}-evidence`);
+        writeFileSync(input, item.events.map((event) => JSON.stringify(event)).join('\n'));
+        const result = spawnSync(releaseCli, ['--json', '--junit', junit, '--evidence-dir', evidence, input], { cwd: sandbox, encoding: 'utf8' });
+        expect(result.status, item.name).toBe(2);
+        expect(JSON.parse(result.stdout).errors.join('\n'), item.name).toContain(item.error);
+        expect(existsSync(junit), item.name).toBe(false);
+        expect(existsSync(evidence), item.name).toBe(false);
+      }
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
+  it('@claim:run-correlation keeps interleaved plans and assertions with their test run', () => {
+    const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-correlation-'));
+    const input = join(sandbox, 'interleaved.jsonl');
+    const evidence = join(sandbox, 'evidence');
+    const events = [
+      { type: 'test_plan', '@testfile': 'tests/main.tftest.hcl', '@testrun': 'alpha', test_plan: { variables: { target: { value: 'alpha-input' } }, outputs: { result: { value: 'alpha-output' } }, resource_changes: [{ change: { actions: ['create'], after: { note: 'alpha-change' } } }] } },
+      { type: 'test_plan', '@testfile': 'tests/main.tftest.hcl', '@testrun': 'beta', test_plan: { variables: { target: { value: 'beta-input' } }, outputs: { result: { value: 'beta-output' } }, resource_changes: [{ change: { actions: ['update'], after: { note: 'beta-change' } } }] } },
+      { type: 'diagnostic', '@testfile': 'tests/main.tftest.hcl', '@testrun': 'beta', diagnostic: { detail: 'beta assertion failed', snippet: { values: [{ traversal: 'var.beta' }] } } },
+      { type: 'diagnostic', '@testfile': 'tests/main.tftest.hcl', '@testrun': 'alpha', diagnostic: { detail: 'alpha assertion failed', snippet: { values: [{ traversal: 'var.alpha' }] } } },
+      { type: 'test_run', '@testfile': 'tests/main.tftest.hcl', '@testrun': 'alpha', test_run: { status: 'fail', elapsed: 0.1 } },
+      { type: 'test_run', '@testfile': 'tests/main.tftest.hcl', '@testrun': 'beta', test_run: { status: 'fail', elapsed: 0.2 } },
+      { type: 'test_summary', test_summary: { status: 'fail' } },
+    ];
+    try {
+      writeFileSync(input, events.map((event) => JSON.stringify(event)).join('\n'));
+      const result = spawnSync(releaseCli, ['--json', '--evidence-dir', evidence, input], { cwd: sandbox, encoding: 'utf8' });
+      expect(result.status, result.stderr).toBe(0);
+      const artifact = JSON.parse(readFileSync(join(evidence, 'evidence.json'), 'utf8'));
+      const alpha = artifact.testCases.find((testCase: { name: string }) => testCase.name === 'alpha');
+      const beta = artifact.testCases.find((testCase: { name: string }) => testCase.name === 'beta');
+      expect(JSON.stringify(alpha)).toContain('alpha-input');
+      expect(JSON.stringify(alpha)).toContain('alpha-output');
+      expect(JSON.stringify(alpha)).toContain('alpha-change');
+      expect(alpha.assertionPaths).toEqual(['var.alpha']);
+      expect(alpha.failure).toBe('alpha assertion failed');
+      expect(JSON.stringify(alpha)).not.toContain('beta-');
+      expect(JSON.stringify(beta)).toContain('beta-input');
+      expect(JSON.stringify(beta)).toContain('beta-output');
+      expect(JSON.stringify(beta)).toContain('beta-change');
+      expect(beta.assertionPaths).toEqual(['var.beta']);
+      expect(beta.failure).toBe('beta assertion failed');
+      expect(JSON.stringify(beta)).not.toContain('alpha-');
+      expect(readFileSync(join(evidence, 'index.html'), 'utf8')).toContain('planSummary:c.planSummary');
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
   it('@claim:conversion-only never launches infrastructure tools or opens a network socket', () => {
     if (process.platform !== 'linux') throw new Error('The conversion-only claim sandbox requires Linux syscall interposition.');
     const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-isolation-'));
@@ -149,15 +220,46 @@ describe('release CLI conversion', () => {
     }
   });
 
+  it('@claim:requested-path-writes writes conversion artifacts only to named paths', () => {
+    if (process.platform !== 'linux') throw new Error('The requested-path claim sandbox requires Linux syscall interposition.');
+    const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-requested-paths-'));
+    const guard = join(sandbox, 'requested-writes-only.so');
+    const input = join(sandbox, 'input.jsonl');
+    const junit = join(sandbox, 'report.xml');
+    const evidence = join(sandbox, 'evidence');
+    try {
+      writeFileSync(input, readFileSync(join(root, 'examples/tofu-test.jsonl'), 'utf8'));
+      execFileSync('cc', ['-shared', '-fPIC', '-Wall', '-Werror', '-o', guard, join(root, 'tests/fixtures/requested-writes-only.c'), '-ldl'], { cwd: root, encoding: 'utf8' });
+      const result = spawnSync(releaseCli, ['--json', '--junit', junit, '--evidence-dir', evidence, input], {
+        cwd: sandbox,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          TMPDIR: sandbox,
+          LD_PRELOAD: guard,
+          ITE_ALLOWED_JUNIT: junit,
+          ITE_ALLOWED_EVIDENCE_DIR: evidence,
+        },
+      });
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(JSON.parse(result.stdout)).toEqual({ valid: true, checks: 2, errors: [] });
+      expect(readdirSync(sandbox).sort()).toEqual(['evidence', 'input.jsonl', 'report.xml', 'requested-writes-only.so']);
+      expect(readdirSync(evidence).sort()).toEqual(['evidence.json', 'index.html']);
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
   it('fails closed for an unreadable input', () => {
     expect(() => execFileSync('cargo', ['run', '--quiet', '--locked', '--', '--json', 'examples/does-not-exist.json'], { cwd: root, encoding: 'utf8' })).toThrow();
   });
 
-  it('keeps real-style sensitive diagnostics out of every reviewer artifact', () => {
+  it('@claim:sensitive-diagnostics keeps sensitive diagnostics out of every packaged reviewer artifact', () => {
     const output = mkdtempSync(join(tmpdir(), 'infra-test-evidence-real-'));
     const evidence = join(output, 'evidence');
     try {
-      execFileSync('cargo', ['run', '--quiet', '--locked', '--', '--evidence-dir', evidence, 'examples/opentofu-real-stream.jsonl'], { cwd: root, encoding: 'utf8' });
+      execFileSync(releaseCli, ['--evidence-dir', evidence, 'examples/opentofu-real-stream.jsonl'], { cwd: root, encoding: 'utf8' });
       const artifact = readFileSync(join(evidence, 'evidence.json'), 'utf8');
       const page = readFileSync(join(evidence, 'index.html'), 'utf8');
       expect(artifact).not.toContain('s3cr3t-sentinel');

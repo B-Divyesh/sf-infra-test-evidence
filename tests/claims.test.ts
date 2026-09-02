@@ -40,6 +40,21 @@ describe('release claims contract', () => {
     expect(config).toContain("command: 'npm run build:site && npm run preview'");
   });
 
+  it('ships an asciinema recording with the packaged demo output contract', () => {
+    const recording = readFileSync('public/cli-demo.cast', 'utf8').trim().split('\n');
+    const header = JSON.parse(recording[0]) as { version: number; title: string };
+    const transcript = recording.slice(1).map((line) => (JSON.parse(line) as [number, string, string])[2]).join('');
+    expect(header).toEqual(expect.objectContaining({ version: 2, title: 'Packaged infra-test-evidence 0.1.0 --demo' }));
+    expect(transcript).toContain('$ infra-test-evidence --demo');
+    expect(transcript).toContain('Demo complete: 2 checks converted');
+    expect(transcript).toContain('JUnit report:');
+    expect(transcript).toContain('/report.xml');
+    expect(transcript).toContain('Reviewer page:');
+    expect(transcript).toContain('/evidence/index.html');
+    expect(transcript).toContain('Evidence JSON:');
+    expect(transcript).toContain('/evidence/evidence.json');
+  });
+
   it('@claim:mit-license keeps package metadata and the shipped license on MIT', () => {
     const cargo = readFileSync('Cargo.toml', 'utf8');
     const license = readFileSync('LICENSE', 'utf8');

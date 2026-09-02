@@ -35,6 +35,30 @@
         <div class="hero-actions"><a class="primary-action" href="/demo/">Try it with sample data</a><a class="secondary-action" href="#reader-title">Open your evidence file</a><span>See two example checks in the browser reader.</span></div>
         <ul class="hero-facts" aria-label="Product facts"><li>Runs in your browser</li><li>No trackers or uploads</li><li>Free under the MIT License</li></ul>
       </section>
+      <section class="recording" aria-labelledby="recording-title">
+        <div class="recording-head">
+          <div><p class="eyebrow">Packaged CLI demo</p><h2 id="recording-title">Watch the three outputs appear</h2></div>
+          <button id="recording-control" class="recording-control" type="button">Pause recording</button>
+        </div>
+        <p>The real packaged <code>--demo</code> flow converts two bundled checks without setup.</p>
+        <figure aria-labelledby="recording-title recording-caption">
+          <div class="terminal-bar" aria-hidden="true"><span></span><span></span><span></span><b>infra-test-evidence — demo</b></div>
+          <pre id="recording-output" class="terminal-output" aria-hidden="true"><code>$ infra-test-evidence --demo
+</code></pre>
+          <figcaption id="recording-caption">Recorded from the packaged 0.1.0 binary. Temporary directory details are shortened.</figcaption>
+        </figure>
+        <p id="recording-status" class="visually-hidden" role="status" aria-live="polite">Recording loading</p>
+        <details class="recording-transcript">
+          <summary>Read the recording transcript</summary>
+          <pre tabindex="0"><code>$ infra-test-evidence --demo
+Demo complete: 2 checks converted
+Demo directory: /tmp/infra-test-evidence-demo-…
+Sample input: /tmp/infra-test-evidence-demo-…/tofu-test.jsonl
+JUnit report: /tmp/infra-test-evidence-demo-…/report.xml
+Reviewer page: /tmp/infra-test-evidence-demo-…/evidence/index.html
+Evidence JSON: /tmp/infra-test-evidence-demo-…/evidence/evidence.json</code></pre>
+        </details>
+      </section>
       <section class="reader" aria-labelledby="reader-title">
         <div class="reader-head"><div><p class="eyebrow">Evidence reader</p><h2 id="reader-title">Open a record</h2></div><output id="status" class="status" aria-live="polite">Waiting for evidence</output></div>
         <label class="drop-zone" for="evidence-file"><span class="drop-mark" aria-hidden="true">↓</span><span><strong>Choose a JSON evidence file</strong><small>or drag it here · nothing is uploaded</small></span><input id="evidence-file" type="file" accept="application/json,.json" /></label>
