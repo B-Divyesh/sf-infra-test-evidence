@@ -1,49 +1,54 @@
-# Infra Test Evidence polish 2 handoff
+# Infra Test Evidence verification 12 handoff
 
-- **Work order:** `infra-test-evidence-polish-2`
-- **Repair commits:** `17462deb7815a31ca1a37e82b0b49399167b478c`, `f6528ab943a7ef26a5f318903d1fb3c860ef5f19`
+- **Work order:** `infra-test-evidence-verify-12`
+- **Verified candidate:** `89900c20c4f1ac409ff22e9f4a844612c7b0aa31`
 - **Live URL:** https://infra-test-evidence.sociobot.in
 - **Result:** PASS
 
-This repair closes F-2-1 through F-2-6 and re-verifies every earlier finding.
-The landing uses one output set—**JUnit report**, **evidence JSON**, and
-**reviewer page**. Strict validation now proves malformed JSON, incomplete
-records, output failures, valid input, and usage errors. Named identifier-field
-redaction has its own packaged-CLI claim. The demo claim proves each exact
-output path above the fold at 390×844 and 1440×900. The two vague copy lines
-were rewritten in direct language. See `.factory/polish-2.md` for the complete
-finding-to-evidence map.
+Independent QA finds a working local-first CLI and static reader for
+infrastructure-module maintainers. It converts supplied OpenTofu/Terraform
+test output into JUnit plus redacted JSON/HTML reviewer evidence without
+running infrastructure commands, reading remote state, uploading logs, or
+contacting a service. The live deployment matches the candidate build
+byte-for-byte for the document, hashed assets, CLI recording, and demo
+artifact.
 
 ## Verification
 
-From a `git clone --no-local` of the repair commit, `npm ci` completed with
-zero audit vulnerabilities. Every one of the 24 exact commands in
-`.factory/claims.json` passed separately. That clean clone also passed:
+From a clean checkout at the candidate, `npm ci` completed with zero reported
+vulnerabilities. Every one of the 24 exact commands in `.factory/claims.json`
+passed separately. This includes packaged CLI demo/conversion, redaction and
+fail-closed safety, strict validation, output/path isolation, no-network
+conversion, local artifact privacy, the one-click browser sandbox, recording,
+and MIT licensing. The checkout also passed:
 
 - `npm run check` — ESLint, TypeScript, 8 Rust tests, and 28 frontend tests.
 - `npm run build` — `dist/site/` produced; 6.78 kB raw / 2.69 kB gzip initial
-  main JavaScript and 11.74 kB raw / 3.38 kB gzip CSS.
+  main JavaScript, 1.34 kB raw / 0.68 kB gzip routes JavaScript, and 11.74 kB
+  raw / 3.38 kB gzip CSS.
 - `npm run qa:browser` — 22 browser tests.
 - `npm run qa:a11y` — 2 Axe tests.
 - `npm run package:check` — `cargo package --locked` and `npm pack --dry-run`.
 
-After the final output-label adjustment, a second no-local clone of
-`2f33b2be0b9f8874e1aef42c3cd69805cbb4e882` again passed all 24 exact claim
-commands separately.
-
-Production was deployed with the Azure Static Web Apps CLI from `dist/site/`.
-Cold live Chromium checks at 390×844 and 1440×900 confirmed the revised copy,
-the isolated `?demo=1` flow, all three output paths above the fold, and no
-console errors. Live Axe scans returned zero violations on `/`, `/demo/?demo=1`,
-`/privacy/`, `/terms/`, and `/not-found`. Live responses include the configured
-CSP, `Referrer-Policy`, `X-Content-Type-Options`, and `Permissions-Policy`.
+A fresh packaged consumer install independently passed `--help`, `--demo`, a
+two-check normal conversion, and an invalid string-duration input (exit 2 with
+machine-readable validation). Live Chromium checks at 390×844 and 1440×900
+confirmed the first-screen demo, no console/page errors, same-origin-only
+requests, no browser storage/cookies, visible keyboard focus, no overflow or
+undersized controls, reduced motion, and zero serious/critical Axe findings.
+HTML responses revalidate at 30 seconds; hashed assets are immutable for one
+year. Security headers include CSP, HSTS, `nosniff`, frame denial, strict
+referrer policy, and Permissions Policy.
 
 ## Run and deploy
 
 Run `npm ci && npm run check && npm run build && npm run qa:browser && npm run
-qa:a11y && npm run package:check`. Deploy `dist/site/` to the scoped Static Web
-App `sf-infra-test-evidence`.
+qa:a11y && npm run package:check`. See `.factory/verification-12.md` for exact
+evidence and all passing claim IDs. Deploy `dist/site/` to the scoped Static
+Web App `sf-infra-test-evidence`.
 
 ## Known gaps
 
-None.
+None. This static product has no server-side endpoint, sign-in, rate limit,
+persistence boundary, payment/unlock, or service worker; those checks do not
+apply.
