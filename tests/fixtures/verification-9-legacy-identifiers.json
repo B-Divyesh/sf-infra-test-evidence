@@ -1,0 +1,1 @@
+{"run":"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc123","environment":"i-0abc123","recordedAt":"x","checks":[{"name":"i-0abc123","status":"fail","message":"aws_instance.web with ARN arn:aws:ec2:us-east-1:123456789012:instance/i-0abc123 failed"}]}

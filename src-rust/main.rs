@@ -50,6 +50,9 @@ fn field(object: &Map<String, Value>, key: &str) -> Option<String> {
         .filter(|v| !v.is_empty())
         .map(ToOwned::to_owned)
 }
+fn redacted_field(object: &Map<String, Value>, key: &str) -> Option<String> {
+    field(object, key).map(|value| redact_text(&value))
+}
 fn status(value: &str) -> Option<&'static str> {
     match value.trim().to_ascii_lowercase().as_str() {
         "pass" | "passed" | "success" => Some("pass"),
@@ -311,7 +314,7 @@ fn legacy(object: &Map<String, Value>, input_digest: String) -> Result<Report, V
             errors.push(format!("check {} must be an object", i + 1));
             continue;
         };
-        let name = field(check, "name");
+        let name = redacted_field(check, "name");
         let state = field(check, "status").and_then(|v| status(&v).map(str::to_owned));
         if name.is_none() {
             errors.push(format!("check {} needs a non-empty name", i + 1));
@@ -331,7 +334,8 @@ fn legacy(object: &Map<String, Value>, input_digest: String) -> Result<Report, V
         if let (Some(name), Some(state)) = (name, state) {
             cases.push(Case {
                 name,
-                class_name: field(object, "run").unwrap_or_else(|| "legacy-evidence".to_owned()),
+                class_name: redacted_field(object, "run")
+                    .unwrap_or_else(|| "legacy-evidence".to_owned()),
                 duration: time,
                 failure: (state != "pass")
                     .then(|| field(check, "message").map(|v| redact_text(&v)))
@@ -339,7 +343,7 @@ fn legacy(object: &Map<String, Value>, input_digest: String) -> Result<Report, V
                 status: state,
                 inputs: vec![format!(
                     "environment={}",
-                    field(object, "environment").unwrap_or_default()
+                    redacted_field(object, "environment").unwrap_or_default()
                 )],
                 assertions: Vec::new(),
                 plans: Vec::new(),
@@ -992,6 +996,8 @@ mod tests {
     const FIXTURE: &str = include_str!("../examples/opentofu-real-stream.jsonl");
     const RESOURCE_IDENTIFIER_FIXTURE: &str =
         include_str!("../tests/fixtures/verification-9-resource-identifiers.jsonl");
+    const LEGACY_IDENTIFIER_FIXTURE: &str =
+        include_str!("../tests/fixtures/verification-9-legacy-identifiers.json");
     const DURATION_STRING_FIXTURE: &str =
         include_str!("../tests/fixtures/verification-9-duration-string.json");
     const ELAPSED_STRING_FIXTURE: &str =
@@ -1023,14 +1029,16 @@ mod tests {
                 .any(|error| error.contains("test_summary status does not match"))
         );
 
-        let report = parse(RESOURCE_IDENTIFIER_FIXTURE).unwrap();
-        for output in [
-            junit(&report),
-            serde_json::to_string(&artifact(&report)).unwrap(),
-            page(&artifact(&report)),
-        ] {
-            for identifier in ["arn:aws", "i-0abc123", "aws_instance.web"] {
-                assert!(!output.contains(identifier));
+        for fixture in [RESOURCE_IDENTIFIER_FIXTURE, LEGACY_IDENTIFIER_FIXTURE] {
+            let report = parse(fixture).unwrap();
+            for output in [
+                junit(&report),
+                serde_json::to_string(&artifact(&report)).unwrap(),
+                page(&artifact(&report)),
+            ] {
+                for identifier in ["arn:aws", "i-0abc123", "aws_instance.web"] {
+                    assert!(!output.contains(identifier));
+                }
             }
         }
 

@@ -51,21 +51,24 @@ describe('release CLI conversion', () => {
   }, 60_000);
 
   it('@claim:resource-identifier-redaction removes AWS ARNs and EC2 identifiers from every release-package artifact', () => {
-    const output = mkdtempSync(join(tmpdir(), 'infra-test-evidence-resource-identifiers-'));
-    const junit = join(output, 'report.xml');
-    const evidence = join(output, 'evidence');
+    const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-resource-identifiers-'));
     try {
-      const result = spawnSync(releaseCli, ['--json', '--junit', junit, '--evidence-dir', evidence, 'tests/fixtures/verification-9-resource-identifiers.jsonl'], { cwd: root, encoding: 'utf8' });
-      expect(result.status, result.stderr).toBe(0);
-      expect(JSON.parse(result.stdout)).toEqual({ valid: true, checks: 1, errors: [] });
-      const generated = [junit, ...readdirSync(evidence, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => join(evidence, entry.name))];
-      for (const artifact of generated) {
-        const contents = readFileSync(artifact, 'utf8');
-        for (const identifier of ['arn:aws', 'i-0abc123', 'aws_instance.web']) expect(contents).not.toContain(identifier);
+      for (const input of ['tests/fixtures/verification-9-resource-identifiers.jsonl', 'tests/fixtures/verification-9-legacy-identifiers.json']) {
+        const output = mkdtempSync(join(sandbox, 'output-'));
+        const junit = join(output, 'report.xml');
+        const evidence = join(output, 'evidence');
+        const result = spawnSync(releaseCli, ['--json', '--junit', junit, '--evidence-dir', evidence, input], { cwd: root, encoding: 'utf8' });
+        expect(result.status, `${input}: ${result.stderr}`).toBe(0);
+        expect(JSON.parse(result.stdout)).toEqual({ valid: true, checks: 1, errors: [] });
+        const generated = [junit, ...readdirSync(evidence, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => join(evidence, entry.name))];
+        for (const artifact of generated) {
+          const contents = readFileSync(artifact, 'utf8');
+          for (const identifier of ['arn:aws', 'i-0abc123', 'aws_instance.web']) expect(contents).not.toContain(identifier);
+        }
+        expect(readFileSync(join(evidence, 'evidence.json'), 'utf8')).toContain('[REDACTED]');
       }
-      expect(readFileSync(join(evidence, 'evidence.json'), 'utf8')).toContain('[REDACTED]');
     } finally {
-      rmSync(output, { recursive: true, force: true });
+      rmSync(sandbox, { recursive: true, force: true });
     }
   });
 
