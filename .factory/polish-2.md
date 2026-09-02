@@ -17,7 +17,7 @@
 | F-1-7 | The landing action and all three product facts remain above the first viewport. | browser test `keeps the landing action and all three product facts…`; live `landing-390.png`, `landing-1440.png`. |
 | F-1-8 | Route changes and Back focus the destination h1 and announce it. | browser test `moves focus and announces…`. |
 | F-1-9 | The designed 404 keeps canonical, Open Graph, and Twitter metadata. | browser route test; live `/not-found` Axe check. |
-| F-1-10 | The recording heading names the three output types. | copy regression; live landing check. |
+| F-1-10 | The recording heading names the JUnit report, evidence JSON, and reviewer page. | copy regression; live landing check. |
 | F-1-11 | The decorative eyebrow remains `Generated files`. | copy regression. |
 | F-1-12 | The 404 names the error plainly as `PAGE NOT FOUND`. | route/copy regression. |
 | F-1-13 | The final stray alternate output names were removed. The site now uses **JUnit report**, **evidence JSON**, and **reviewer page**. | copy regression rejects `reviewer JSON` and `static HTML page`; live landing check. |

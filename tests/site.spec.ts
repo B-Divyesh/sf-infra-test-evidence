@@ -146,7 +146,7 @@ test('@claim:cli-recording plays the packaged CLI recording with a transcript an
   expect(await recording.text()).toContain('Demo complete: 2 checks converted');
 
   await page.goto('/');
-  const figure = page.getByRole('figure', { name: /See the CLI create JUnit, JSON, and HTML/ });
+  const figure = page.getByRole('figure', { name: /See the CLI create a JUnit report, evidence JSON, and reviewer page/ });
   const output = page.locator('#recording-output');
   const transcript = page.locator('.recording-transcript');
   await expect(figure).toBeVisible();

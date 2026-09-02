@@ -59,7 +59,7 @@ describe('release claims contract', () => {
     const landing = readFileSync('index.html', 'utf8');
     const readme = readFileSync('README.md', 'utf8');
     const errorPage = readFileSync('404.html', 'utf8');
-    expect(landing).toContain('See the CLI create JUnit, JSON, and HTML');
+    expect(landing).toContain('See the CLI create a JUnit report, evidence JSON, and reviewer page');
     expect(landing).toContain('Generated files');
     expect(landing).toContain('three output files: a JUnit report, evidence JSON, and a reviewer page');
     expect(landing).toContain('Create a JUnit report, evidence JSON, and a reviewer page.');

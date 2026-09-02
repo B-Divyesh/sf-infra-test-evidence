@@ -13,7 +13,7 @@ not sentences. No sentence exceeds 22 words. No banned marketing word appears.
 | Runs in your browser | 4 | None |
 | No trackers or uploads | 4 | None |
 | Free under the MIT License | 5 | None |
-| See the CLI create JUnit, JSON, and HTML | 8 | None |
+| See the CLI create a JUnit report, evidence JSON, and reviewer page | 12 | None |
 | The real packaged `--demo` flow converts two bundled checks without setup. | 10 | None |
 | Recorded from the packaged 0.1.0 binary. | 6 | None |
 | Temporary directory details are shortened. | 5 | None |
