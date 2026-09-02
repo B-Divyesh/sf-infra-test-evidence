@@ -1,54 +1,35 @@
-# Infra Test Evidence verification 12 handoff
+# Infra Test Evidence review 3 handoff
 
-- **Work order:** `infra-test-evidence-verify-12`
-- **Verified candidate:** `89900c20c4f1ac409ff22e9f4a844612c7b0aa31`
+- **Work order:** `infra-test-evidence-review-3`
+- **Reviewed candidate:** `b08c37df7f28a35c4e57aef2d8ae58e20d3cb9c5`
 - **Live URL:** https://infra-test-evidence.sociobot.in
-- **Result:** PASS
+- **Result:** FAIL — 2 blocking and 2 minor findings
 
-Independent QA finds a working local-first CLI and static reader for
-infrastructure-module maintainers. It converts supplied OpenTofu/Terraform
-test output into JUnit plus redacted JSON/HTML reviewer evidence without
-running infrastructure commands, reading remote state, uploading logs, or
-contacting a service. The live deployment matches the candidate build
-byte-for-byte for the document, hashed assets, CLI recording, and demo
-artifact.
+This work order changed no product code. The complete adversarial report is in
+`.factory/review-3.md`. The one-click browser demo, isolated CLI demo, claims,
+routing, accessibility, privacy behavior, build, and package checks pass. Two
+review-1 terminology findings remain in runtime/input copy despite earlier
+repair notes marking them fixed: F-1-13 and F-1-14. The report also records two
+minor plain-language issues, F-3-1 and F-3-2.
 
-## Verification
+## Verification performed
 
-From a clean checkout at the candidate, `npm ci` completed with zero reported
-vulnerabilities. Every one of the 24 exact commands in `.factory/claims.json`
-passed separately. This includes packaged CLI demo/conversion, redaction and
-fail-closed safety, strict validation, output/path isolation, no-network
-conversion, local artifact privacy, the one-click browser sandbox, recording,
-and MIT licensing. The checkout also passed:
+- Opened the live site cold at 390 × 844 and 1440 × 900.
+- Exercised demo entry, local-file replacement, Reset demo, and Start for real.
+- Confirmed same-origin-only requests and no cookies, localStorage,
+  sessionStorage, or IndexedDB.
+- Ran the CLI `--demo` in an isolated temporary directory.
+- Ran all 24 `.factory/claims.json` commands separately from a clean clone; all
+  passed.
+- Ran `npm run check`, `npm run build`, `npm run qa:browser`, `npm run qa:a11y`,
+  and `npm run package:check` from that clone; all passed.
+- Crawled live links and metadata, tested forward/Back focus, ran the fleet URL
+  verifier, inspected response headers, and ran live Axe across five routes,
+  two viewports, and light/dark modes.
 
-- `npm run check` — ESLint, TypeScript, 8 Rust tests, and 28 frontend tests.
-- `npm run build` — `dist/site/` produced; 6.78 kB raw / 2.69 kB gzip initial
-  main JavaScript, 1.34 kB raw / 0.68 kB gzip routes JavaScript, and 11.74 kB
-  raw / 3.38 kB gzip CSS.
-- `npm run qa:browser` — 22 browser tests.
-- `npm run qa:a11y` — 2 Axe tests.
-- `npm run package:check` — `cargo package --locked` and `npm pack --dry-run`.
+## Next steps
 
-A fresh packaged consumer install independently passed `--help`, `--demo`, a
-two-check normal conversion, and an invalid string-duration input (exit 2 with
-machine-readable validation). Live Chromium checks at 390×844 and 1440×900
-confirmed the first-screen demo, no console/page errors, same-origin-only
-requests, no browser storage/cookies, visible keyboard focus, no overflow or
-undersized controls, reduced motion, and zero serious/critical Axe findings.
-HTML responses revalidate at 30 seconds; hashed assets are immutable for one
-year. Security headers include CSP, HSTS, `nosniff`, frame denial, strict
-referrer policy, and Permissions Policy.
-
-## Run and deploy
-
-Run `npm ci && npm run check && npm run build && npm run qa:browser && npm run
-qa:a11y && npm run package:check`. See `.factory/verification-12.md` for exact
-evidence and all passing claim IDs. Deploy `dist/site/` to the scoped Static
-Web App `sf-infra-test-evidence`.
-
-## Known gaps
-
-None. This static product has no server-side endpoint, sign-in, rate limit,
-persistence boundary, payment/unlock, or service worker; those checks do not
-apply.
+Apply the four concrete rewrites in `.factory/review-3.md`, extend copy checks
+to TypeScript runtime strings, deploy through the factory, and repeat the full
+review. No infrastructure, DNS, billing, secrets, or external product resources
+were accessed or changed.
