@@ -1,0 +1,4 @@
+{"type":"test_plan","@testfile":"tests/i-0abc123.tftest.hcl","@testrun":"rejects_identifier_leaks","test_plan":{"outputs":{"instance_ref":{"value":"arn:aws:ec2:us-east-1:123456789012:instance/i-0abc123"}},"resource_changes":[]}}
+{"type":"diagnostic","@testfile":"tests/i-0abc123.tftest.hcl","@testrun":"rejects_identifier_leaks","diagnostic":{"detail":"aws_instance.web with ARN arn:aws:ec2:us-east-1:123456789012:instance/i-0abc123 failed"}}
+{"type":"test_run","@testfile":"tests/i-0abc123.tftest.hcl","@testrun":"rejects_identifier_leaks","test_run":{"status":"fail","elapsed":0.1,"error_message":"EC2 instance i-0abc123 failed"}}
+{"type":"test_summary","test_summary":{"status":"fail"}}

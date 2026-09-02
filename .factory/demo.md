@@ -7,10 +7,13 @@
 - Local URL after `npm run build && npm run preview`:
   `http://127.0.0.1:4173/?demo=1`
 - Entry action: **Try it with sample data** on the landing page.
-- Sample: a view of the bundled `examples/tofu-test.jsonl` conversion. It shows
+- Sample: the committed `public/demo-evidence.json` output of the bundled
+  `examples/tofu-test.jsonl` conversion. It shows
   the failed `blocks_public_ingress` check, its assertion path, a `[REDACTED]`
   sensitive value, the source SHA-256, and `report.xml`, `evidence.json`, and
-  the reviewer page before the file picker.
+  the reviewer page before the file picker. The release test compares this
+  static artifact byte-for-byte by JSON value with a fresh packaged `--demo`
+  conversion, so the browser does not invent separate proof values.
 - Reset: **Reset demo** restores the in-memory sample.
 - Exit: **Start for real** returns to `/` and discards the in-memory record.
 - Storage namespace: none. The reader does not use localStorage, sessionStorage,

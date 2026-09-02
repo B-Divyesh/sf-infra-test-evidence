@@ -7,6 +7,8 @@ if (window.location.pathname === '/' && new URLSearchParams(window.location.sear
 }
 
 const sample: Evidence = { run: 'network.tftest.hcl', environment: 'local conversion sample', recordedAt: '2026-08-27T12:00:00Z', checks: [{ name: 'private_network_only', status: 'pass', durationMs: 180 }, { name: 'blocks_public_ingress', status: 'fail', durationMs: 310 }] };
+type DemoCase = { name?: unknown; status?: unknown; durationSeconds?: unknown; assertionPaths?: unknown };
+type DemoArtifact = { provenance?: { inputSha256?: unknown }; testCases?: unknown; assertionPaths?: unknown };
 const fileInput = document.querySelector<HTMLInputElement>('#evidence-file')!;
 const result = document.querySelector<HTMLElement>('#result')!;
 const error = document.querySelector<HTMLElement>('#file-error')!;
@@ -16,13 +18,33 @@ const resetDemo = document.querySelector<HTMLButtonElement>('#reset-demo');
 const recordingOutput = document.querySelector<HTMLElement>('#recording-output code');
 const recordingControl = document.querySelector<HTMLButtonElement>('#recording-control');
 const recordingStatus = document.querySelector<HTMLElement>('#recording-status');
+let demoArtifact: DemoArtifact | undefined;
+let demoArtifactError = false;
+let currentRecord: Evidence | undefined;
 
 function text(value: unknown, fallback = 'Not recorded'): string { return typeof value === 'string' && value.trim() ? value : fallback; }
 function escapeHtml(value: string): string { const node = document.createElement('span'); node.textContent = value; return node.innerHTML; }
+function demoCases(artifact: DemoArtifact): DemoCase[] {
+  return Array.isArray(artifact.testCases)
+    ? artifact.testCases.filter((item): item is DemoCase => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    : [];
+}
+function strings(value: unknown): string[] { return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []; }
+function formatDuration(value: unknown): string { return typeof value === 'number' && Number.isFinite(value) ? `${Math.round(value * 1000)} ms` : 'No duration'; }
 function demoProof(): string {
-  return `<section class="demo-proof" aria-labelledby="demo-proof-title"><div><p class="eyebrow">Converted sample output</p><h3 id="demo-proof-title">Failed OpenTofu test ready for review</h3></div><dl><div><dt>Failed check</dt><dd><strong>blocks_public_ingress</strong> · FAIL · 310 ms</dd></div><div><dt>Assertion path</dt><dd><code>aws_security_group.web.ingress</code></dd></div><div><dt>Redaction</dt><dd><code>[REDACTED]</code> replaced a sensitive value</dd></div><div><dt>Provenance</dt><dd><code>SHA-256 926eb21…10fddbf</code></dd></div><div><dt>Output files</dt><dd><code>report.xml</code> · <code>evidence/evidence.json</code> · <code>evidence/index.html</code></dd></div></dl></section>`;
+  if (!demoArtifact) {
+    return `<section class="demo-proof" aria-labelledby="demo-proof-title"><div><p class="eyebrow">Converted sample output</p><h3 id="demo-proof-title">Failed OpenTofu test ready for review</h3></div><p>${demoArtifactError ? 'The bundled sample evidence could not load. Reload this page to try again.' : 'Loading the bundled CLI conversion.'}</p></section>`;
+  }
+  const cases = demoCases(demoArtifact);
+  const failed = cases.find((testCase) => ['fail', 'error'].includes(text(testCase.status, '').toLowerCase())) ?? cases[0];
+  const assertion = strings(failed?.assertionPaths)[0] ?? strings(demoArtifact.assertionPaths)[0] ?? 'Not recorded';
+  const hash = text(demoArtifact.provenance?.inputSha256);
+  const sourceHash = hash.length >= 14 ? `${hash.slice(0, 7)}…${hash.slice(-7)}` : hash;
+  const redaction = JSON.stringify(demoArtifact).includes('[REDACTED]') ? '[REDACTED]' : 'Not recorded';
+  return `<section class="demo-proof" aria-labelledby="demo-proof-title"><div><p class="eyebrow">Converted sample output</p><h3 id="demo-proof-title">Failed OpenTofu test ready for review</h3></div><dl><div><dt>Failed check</dt><dd><strong>${escapeHtml(text(failed?.name))}</strong> · ${escapeHtml(text(failed?.status).toUpperCase())} · ${escapeHtml(formatDuration(failed?.durationSeconds))}</dd></div><div><dt>Assertion path</dt><dd><code>${escapeHtml(assertion)}</code></dd></div><div><dt>Redaction</dt><dd><code>${escapeHtml(redaction)}</code> appears in the converted evidence</dd></div><div><dt>Provenance</dt><dd><code>SHA-256 ${escapeHtml(sourceHash)}</code></dd></div><div><dt>Output files</dt><dd><code>report.xml</code> · <code>evidence/evidence.json</code> · <code>evidence/index.html</code></dd></div></dl></section>`;
 }
 function render(record: Evidence): void {
+  currentRecord = record;
   const checked = validateEvidence(record);
   error.hidden = true;
   status.textContent = checked.valid ? `${checked.checks.length} checks ready` : 'Needs attention';
@@ -39,7 +61,20 @@ dropZone.addEventListener('dragover', (event) => { event.preventDefault(); dropZ
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
 dropZone.addEventListener('drop', (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); const file = event.dataTransfer?.files[0]; if (file) void readFile(file); });
 resetDemo?.addEventListener('click', () => render(sample));
-if (document.body.dataset.mode === 'demo') render(sample);
+async function loadDemoArtifact(): Promise<void> {
+  try {
+    const response = await fetch('/demo-evidence.json');
+    if (!response.ok) throw new Error('sample evidence unavailable');
+    demoArtifact = JSON.parse(await response.text()) as DemoArtifact;
+  } catch {
+    demoArtifactError = true;
+  }
+  if (currentRecord === sample) render(sample);
+}
+if (document.body.dataset.mode === 'demo') {
+  render(sample);
+  void loadDemoArtifact();
+}
 
 type CastEvent = [number, 'o', string];
 

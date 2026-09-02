@@ -1,0 +1,2 @@
+{"type":"test_run","@testfile":"tests/types.tftest.hcl","@testrun":"x","test_run":{"status":"pass","elapsed":"minus one"}}
+{"type":"test_summary","test_summary":{"status":"pass"}}

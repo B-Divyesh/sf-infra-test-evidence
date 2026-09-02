@@ -43,8 +43,8 @@ emitted by the runner, redacted plan-change summaries, failures, and source
 provenance, including the input SHA-256. The reviewer page works from disk and
 makes no network requests.
 
-Secret- and resource-identifier-named fields are recursively redacted before
-they reach the output files. The CLI also redacts values marked by
+Sensitive values, AWS ARNs, EC2 instance IDs, and resource-identifier-named
+fields are redacted before they reach the output files. The CLI also redacts values marked by
 `sensitive: true`, `before_sensitive`, `after_sensitive`, or
 `sensitive_values`. Malformed sensitivity metadata rejects the input and does
 not produce output files. See `examples/tofu-test.jsonl` for a complete sample.
@@ -71,8 +71,9 @@ infra-test-evidence --json examples/passing-evidence.json
 ```
 
 Set `run`, `environment`, and `recordedAt` to non-empty strings. Add one named
-check with status `pass`, `fail`, `error`, or `skip`. Invalid JSON and
-incomplete records exit 2.
+check with status `pass`, `fail`, `error`, or `skip`. If present, `durationMs`
+and event-stream `elapsed` values must be non-negative finite numbers. Invalid
+JSON and incomplete records exit 2.
 
 The converter exits 0 for valid input, 2 for invalid input or output failures,
 and 64 for incorrect usage. `--help` documents every option. `--json` prints a
@@ -102,7 +103,8 @@ MIT. See [LICENSE](LICENSE).
 ## Evidence safety
 
 The converter rejects an event stream without one final supported summary. It
-also rejects unsupported run statuses and negative durations. Test-plan
+also rejects summary statuses that contradict completed runs, unsupported run
+statuses, and malformed or negative durations. Test-plan
 variables, outputs, resource changes, and assertion traversals stay with their
 matching test run before redacted output files are written. The CLI
 redacts the whole sensitive diagnostic. This keeps unmarked values in the same

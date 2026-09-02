@@ -28,6 +28,13 @@
     "sandbox": "packaged CLI; explicit-sensitive fixture with opaque sentinels; scan JUnit, JSON, and HTML"
   },
   {
+    "id": "resource-identifier-redaction",
+    "claim": "AWS ARNs and EC2 instance identifiers are removed from generated JUnit, JSON, and HTML evidence.",
+    "where": "README conversion section and evidence safety section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:resource-identifier-redaction'",
+    "sandbox": "fresh packaged CLI; diagnostic and plan fixture containing an AWS ARN and EC2 identifier; scan every generated artifact"
+  },
+  {
     "id": "sensitivity-fail-closed",
     "claim": "Malformed sensitivity metadata is rejected without producing reviewer artifacts.",
     "where": "README conversion section",
@@ -42,11 +49,25 @@
     "sandbox": "valid sample, invalid record, and incorrect usage in a clean CLI process"
   },
   {
+    "id": "malformed-duration-types",
+    "claim": "The CLI rejects string and boolean compact durations and string event elapsed values.",
+    "where": "README validation section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:malformed-duration-types'",
+    "sandbox": "fresh packaged CLI; exact string and boolean duration counterexamples plus a string elapsed event"
+  },
+  {
     "id": "event-stream-validation",
     "claim": "Event streams are rejected unless one supported summary is final, every completed run has a supported status, and every duration is non-negative.",
     "where": "README evidence safety section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:event-stream-validation'",
-    "sandbox": "fresh packaged CLI installation; six malformed event streams; assert exit 2, exact error, and no reviewer artifacts"
+    "sandbox": "fresh packaged CLI installation; seven malformed event streams; assert exit 2, exact error, and no reviewer artifacts"
+  },
+  {
+    "id": "summary-consistency",
+    "claim": "The CLI rejects a skipped summary after a failed completed test run.",
+    "where": "README evidence safety section",
+    "test": "npm run test:frontend -- --testNamePattern '@claim:summary-consistency'",
+    "sandbox": "fresh packaged CLI; one failed test_run followed by a final skipped test_summary"
   },
   {
     "id": "run-correlation",
@@ -96,6 +117,13 @@
     "where": "landing primary action, /demo banner, and .factory/demo.md",
     "test": "npm run qa:browser -- --grep '@claim:site-demo'",
     "sandbox": "fresh browser context entered from the landing primary action"
+  },
+  {
+    "id": "demo-artifact-fidelity",
+    "claim": "The browser demo renders the failed check, assertion path, duration, redaction, and provenance from the bundled CLI conversion.",
+    "where": "/demo and .factory/demo.md",
+    "test": "npm run qa:browser -- --grep '@claim:demo-artifact-fidelity'",
+    "sandbox": "production site; request the shipped conversion artifact and compare each displayed proof field in a fresh browser context"
   },
   {
     "id": "browser-record-import",

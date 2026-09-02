@@ -1,73 +1,95 @@
-# Infra Test Evidence verification 9 handoff — FAIL
+# Infra Test Evidence repair 8 handoff
 
-**Work order:** `infra-test-evidence-verify-9`
-**Candidate:** `159ce635cb41294bca04f7f41ed5721c1425f062`
-**Live URL:** https://infra-test-evidence.sociobot.in
-**Full report:** `.factory/verification-9.md`
+**Work order:** `infra-test-evidence-repair-8`
+**Base verifier report:** `.factory/verification-9.md` at
+`283838aa87005cfbb219b67eaa0ff4fe55f71cf0`
+**Status:** local repair verification passed; deployment evidence is recorded
+after the production upload below.
 
-## Result
+## What changed
 
-**FAIL. Do not release this candidate.** The deployment matches the candidate
-build and its standard gates pass, but three P1 contract defects remain:
+- Redacts text containing AWS ARNs or EC2 instance IDs before a JUnit report,
+  evidence JSON, or reviewer HTML page is rendered. The exact verifier-style
+  fixture covers diagnostic, failure, and plan-output positions.
+- Reads `assertion_path` and `assertion_paths` from completed `test_run`
+  events. The bundled demo now preserves the two real assertion paths.
+- Adds a sensitive test-plan output to the bundled demo and ships
+  `public/demo-evidence.json`, generated from that conversion. The browser
+  demo loads this artifact and derives its failed check, assertion path,
+  duration, redaction, and SHA-256 proof from it. The release test compares
+  the static artifact with a fresh packaged `--demo` result.
+- Rejects present string, boolean, null, negative, or non-finite compact
+  `durationMs` values and event-stream `elapsed`/`duration_ms` values.
+  The browser reader now rejects malformed duration values and invalid entries
+  in a mixed `checks` array instead of filtering them out.
+- Rejects a `skip` summary unless every completed run was skipped. A failed
+  run followed by a skipped summary now exits 2 with the documented mismatch
+  error.
+- Adds four named claims and exact counterexamples for resource redaction,
+  malformed duration types, skipped-summary consistency, and CLI/demo
+  artifact fidelity.
 
-1. A diagnostic containing an AWS ARN and EC2 instance ID copied those
-   identifiers into JUnit, evidence JSON, and reviewer HTML. A plan output
-   containing the same ARN also leaked into the reviewer files. This violates
-   the default-redaction requirement and the `sensitive-redaction` claim.
-2. The bundled `--demo` input contains two `assertion_path` values, but its
-   generated evidence has empty global and per-case assertion arrays. The live
-   demo hard-codes the missing assertion and a `[REDACTED]` value, so it is not
-   the documented view of the bundled CLI conversion.
-3. Compact `durationMs` values of `"fast"` and `false`, plus an event-stream
-   `elapsed` value of `"minus one"`, all return exit 0 and `valid:true`. This
-   contradicts the advertised strict validation. The browser also silently
-   drops malformed entries from mixed `checks` arrays.
+## Required reproduction before the fix
 
-A P2 consistency defect also remains: a failed test run with a final skipped
-summary is accepted as valid.
-
-## Verification completed
-
-- Started from a clean checkout at the exact candidate SHA.
-- Ran every exact test command in `.factory/claims.json` separately: all 18
-  declared entries passed, but the tests omit the counterexamples above.
-- Cold first-read gate passed: the page plainly says what it does, names
-  infrastructure-module maintainers, and offers one-click **Try it with sample
-  data** with an adjacent outcome description.
-- Passed `npm run check`, Rust formatting and clippy, `npm audit`, the exact
-  production build, package checks, consumer check, the full 20-test browser
-  suite, and the focused accessibility suite.
-- Installed the packaged crate into a fresh consumer root and exercised help,
-  demo, normal conversion, boundary input, invalid input, output errors, JUnit,
-  reviewer JSON, and reviewer HTML.
-- Checked live desktop and 390 px mobile, keyboard-only operation, visible
-  focus, 200% text, reduced motion, invalid-input recovery, touch targets,
-  same-origin request logs, empty browser storage/cookies, response headers,
-  internal links, designed 404 behavior, and axe in light/dark mode.
-- Live Lighthouse: 100 Performance, 100 Accessibility, 100 Best Practices, 100
-  SEO; LCP 1.086 s, TBT 0 ms, CLS 0, transfer 10,899 bytes.
-- Compared every public build output against live bytes; all matched.
-
-No product code was changed during verification. Only this handoff and
-`.factory/verification-9.md` were added/updated.
-
-## Reproduce the blockers
-
-Package and install first:
+Before implementation changes, the verifier fixture returned
+`{"checks":1,"errors":[],"valid":true}` and `rg` found `arn:aws`,
+`i-0abc123`, and `aws_instance.web` in all three generated artifacts:
 
 ```sh
-npm ci
-cargo package --locked --allow-dirty
-cargo install --path target/package/infra-test-evidence-0.1.0 --root /tmp/ite-consumer --locked
+cargo run -- --json --junit /tmp/report.xml --evidence-dir /tmp/evidence \
+  tests/fixtures/verification-9-resource-identifiers.jsonl
+rg 'arn:aws|i-0abc123|aws_instance\.web' /tmp/report.xml /tmp/evidence/*
 ```
 
-Then inspect a bundled demo artifact:
+The same pre-fix run accepted compact `durationMs: "fast"`, event-stream
+`elapsed: "minus one"`, and a failed `test_run` with a final `skip` summary.
+The bundled demo produced empty assertion arrays despite two
+`test_run.assertion_path` values.
 
-```sh
-TMPDIR=/tmp /tmp/ite-consumer/bin/infra-test-evidence --demo
-jq '.assertionPaths, [.testCases[].assertionPaths]' /tmp/infra-test-evidence-demo-*/evidence/evidence.json
+## Verification
+
+Clean install and complete local gates passed:
+
+```text
+npm ci                                      PASS, 0 audit vulnerabilities
+npm run check                               PASS
+  eslint, tsc --noEmit, cargo test (7), vitest (26)
+npm run qa:browser                          PASS, 22 tests, desktop + 390 px
+npm run qa:a11y                             PASS, both Playwright projects
+npm run build                               PASS, dist/site/
+npm run package:check                       PASS, cargo package + npm pack dry run
+npm run consumer:check                      PASS
+cargo fmt --check                           PASS
+cargo clippy --locked --all-targets -- -D warnings
+                                            PASS
+npm audit --audit-level=high                PASS, 0 vulnerabilities
 ```
 
-It reports empty arrays despite `assertion_path` in
-`examples/tofu-test.jsonl`. See the full report for the exact identifier-leak,
-invalid-type, and contradictory-summary probes.
+The repaired production build has 9.1 kB of JavaScript and 11.7 kB of CSS
+before gzip. Its checked-in demo evidence is 1.7 kB. The browser suite covers
+desktop/mobile, keyboard focus, 200% text, reduced motion, contrast/axe,
+same-origin requests, no browser storage, and the disk-opened reviewer page.
+This static product has no service worker, server API, data store, or payment
+flow, so update/offline-server, rate-limit, persistence, and payment checks do
+not apply.
+
+Every exact command listed in `.factory/claims.json` was run separately from
+the clean install: all 22 claims passed. The new counterexample commands are:
+
+```text
+@claim:resource-identifier-redaction         PASS
+@claim:malformed-duration-types              PASS
+@claim:summary-consistency                   PASS
+@claim:demo-artifact-fidelity                PASS in desktop and mobile projects
+```
+
+## Deployment and live identity
+
+Pending the repair commit push and static deployment. After upload, verify
+`https://infra-test-evidence.sociobot.in` with the fleet URL checker, live
+desktop/mobile browser checks, and byte comparison against `dist/site/`.
+
+## Known gaps / next steps
+
+None in the product implementation. Do not publish the crate from this worker;
+the package is ready for the factory registry workflow.

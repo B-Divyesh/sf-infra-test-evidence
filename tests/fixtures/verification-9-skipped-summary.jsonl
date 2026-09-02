@@ -1,0 +1,2 @@
+{"type":"test_run","@testfile":"tests/summary.tftest.hcl","@testrun":"failed_test","test_run":{"status":"fail","elapsed":0.1}}
+{"type":"test_summary","test_summary":{"status":"skip"}}

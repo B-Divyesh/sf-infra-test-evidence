@@ -50,6 +50,25 @@ describe('release CLI conversion', () => {
     }
   }, 60_000);
 
+  it('@claim:resource-identifier-redaction removes AWS ARNs and EC2 identifiers from every release-package artifact', () => {
+    const output = mkdtempSync(join(tmpdir(), 'infra-test-evidence-resource-identifiers-'));
+    const junit = join(output, 'report.xml');
+    const evidence = join(output, 'evidence');
+    try {
+      const result = spawnSync(releaseCli, ['--json', '--junit', junit, '--evidence-dir', evidence, 'tests/fixtures/verification-9-resource-identifiers.jsonl'], { cwd: root, encoding: 'utf8' });
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout)).toEqual({ valid: true, checks: 1, errors: [] });
+      const generated = [junit, ...readdirSync(evidence, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => join(evidence, entry.name))];
+      for (const artifact of generated) {
+        const contents = readFileSync(artifact, 'utf8');
+        for (const identifier of ['arn:aws', 'i-0abc123', 'aws_instance.web']) expect(contents).not.toContain(identifier);
+      }
+      expect(readFileSync(join(evidence, 'evidence.json'), 'utf8')).toContain('[REDACTED]');
+    } finally {
+      rmSync(output, { recursive: true, force: true });
+    }
+  });
+
   it('@claim:cli-demo runs bundled data from the packaged binary in an isolated temporary directory', () => {
     const temporaryRoot = mkdtempSync(join(tmpdir(), 'infra-test-evidence-demo-test-'));
     try {
@@ -63,7 +82,11 @@ describe('release CLI conversion', () => {
       expect(result).toContain(`Reviewer page: ${join(directory!, 'evidence/index.html')}`);
       expect(result).toContain(`Evidence JSON: ${join(directory!, 'evidence/evidence.json')}`);
       expect(readFileSync(join(directory!, 'report.xml'), 'utf8')).toContain('<testsuite');
-      expect(JSON.parse(readFileSync(join(directory!, 'evidence/evidence.json'), 'utf8')).testCases).toHaveLength(2);
+      const artifact = JSON.parse(readFileSync(join(directory!, 'evidence/evidence.json'), 'utf8'));
+      expect(artifact.testCases).toHaveLength(2);
+      expect(artifact.assertionPaths).toEqual(['aws_security_group.web.ingress', 'aws_security_group.web.ingress']);
+      expect(artifact.testCases.map((testCase: { assertionPaths: string[] }) => testCase.assertionPaths)).toEqual([['aws_security_group.web.ingress'], ['aws_security_group.web.ingress']]);
+      expect(JSON.parse(readFileSync(join(root, 'public/demo-evidence.json'), 'utf8'))).toEqual(artifact);
       expect(readFileSync(join(directory!, 'evidence/index.html'), 'utf8')).toContain('Infrastructure test evidence');
       const recorded = readFileSync(join(root, 'public/cli-demo.cast'), 'utf8').trim().split('\n').slice(1)
         .map((line) => (JSON.parse(line) as [number, string, string])[2]).join('').replaceAll('\r\n', '\n').trim();
@@ -132,6 +155,23 @@ describe('release CLI conversion', () => {
     expect(usage.stderr).toContain('--demo cannot be combined');
   });
 
+  it('@claim:malformed-duration-types rejects string and boolean duration values instead of treating them as missing', () => {
+    const sandbox = mkdtempSync(join(tmpdir(), 'infra-test-evidence-duration-types-'));
+    const booleanDuration = join(sandbox, 'duration-false.json');
+    try {
+      writeFileSync(booleanDuration, JSON.stringify({ run: 'r', environment: 'e', recordedAt: 'x', checks: [{ name: 'x', status: 'pass', durationMs: false }] }));
+      for (const input of ['tests/fixtures/verification-9-duration-string.json', booleanDuration, 'tests/fixtures/verification-9-elapsed-string.jsonl']) {
+        const result = spawnSync(releaseCli, ['--json', input], { cwd: root, encoding: 'utf8' });
+        expect(result.status, input).toBe(2);
+        const response = JSON.parse(result.stdout);
+        expect(response).toMatchObject({ valid: false, checks: 0 });
+        expect(response.errors.join('\n')).toContain('must be a non-negative finite number');
+      }
+    } finally {
+      rmSync(sandbox, { recursive: true, force: true });
+    }
+  });
+
   it('@claim:help-options lists every accepted CLI option and succeeds', () => {
     const result = spawnSync(releaseCli, ['--help'], { cwd: root, encoding: 'utf8' });
     expect(result.status).toBe(0);
@@ -157,6 +197,7 @@ describe('release CLI conversion', () => {
       { name: 'unsupported-summary', events: [run, { type: 'test_summary', test_summary: { status: 'unknown' } }], error: 'test_summary has an unsupported status unknown' },
       { name: 'unsupported-run', events: [{ ...run, test_run: { status: 'unknown', elapsed: 0.25 } }, { ...summary, test_summary: { status: 'fail' } }], error: 'test_run has an unsupported status unknown' },
       { name: 'negative-duration', events: [{ ...run, test_run: { status: 'pass', elapsed: -0.25 } }, summary], error: 'test_run elapsed must be a non-negative finite number' },
+      { name: 'string-duration', events: [{ ...run, test_run: { status: 'pass', elapsed: 'minus one' } }, summary], error: 'test_run elapsed must be a non-negative finite number' },
     ];
     try {
       for (const item of cases) {
@@ -173,6 +214,12 @@ describe('release CLI conversion', () => {
     } finally {
       rmSync(sandbox, { recursive: true, force: true });
     }
+  });
+
+  it('@claim:summary-consistency rejects a skipped summary after a failed completed test run', () => {
+    const result = spawnSync(releaseCli, ['--json', 'tests/fixtures/verification-9-skipped-summary.jsonl'], { cwd: root, encoding: 'utf8' });
+    expect(result.status).toBe(2);
+    expect(JSON.parse(result.stdout)).toEqual({ valid: false, checks: 0, errors: ['test_summary status does not match completed test_run results'] });
   });
 
   it('@claim:run-correlation keeps interleaved plans and assertions with their test run', () => {

@@ -1,3 +1,4 @@
+{"@level":"info","type":"test_plan","test_plan":{"path":"tests/network.tftest.hcl","run":"blocks_public_ingress","outputs":{"ingress_note":{"sensitive":true,"value":"only-private-ingress"}},"resource_changes":[]}}
 {"@level":"info","type":"test_run","test_run":{"path":"tests/network.tftest.hcl","run":"private_network_only","status":"pass","elapsed":0.18,"assertion_path":"aws_security_group.web.ingress"}}
 {"@level":"error","type":"test_run","test_run":{"path":"tests/network.tftest.hcl","run":"blocks_public_ingress","status":"fail","elapsed":0.31,"assertion_path":"aws_security_group.web.ingress","error_message":"expected public ingress to be denied"}}
 {"@level":"info","type":"planned_change","change":{"action":"update","address":"aws_security_group.web","password":"never-export-this"}}

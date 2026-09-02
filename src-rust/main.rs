@@ -81,6 +81,40 @@ fn secret(value: &str) -> bool {
     .iter()
     .any(|word| v.contains(word))
 }
+fn aws_arn(value: &str) -> bool {
+    value
+        .as_bytes()
+        .windows(b"arn:aws".len())
+        .any(|window| window == b"arn:aws")
+}
+fn ec2_instance_id(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    for index in 0..bytes.len().saturating_sub(2) {
+        let starts_identifier = bytes[index] == b'i'
+            && bytes[index + 1] == b'-'
+            && (index == 0
+                || !matches!(
+                    bytes[index - 1],
+                    b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-'
+                ));
+        if !starts_identifier {
+            continue;
+        }
+        let mut end = index + 2;
+        while end < bytes.len() && bytes[end].is_ascii_hexdigit() {
+            end += 1;
+        }
+        // Real EC2 IDs use 8 or 17 hexadecimal characters. Accept six here
+        // because test runners commonly shorten fixture identifiers.
+        if end - (index + 2) >= 6 {
+            return true;
+        }
+    }
+    false
+}
+fn resource_identifier(value: &str) -> bool {
+    aws_arn(value) || ec2_instance_id(value)
+}
 fn sensitive_key(key: &str) -> bool {
     let key = key.to_ascii_lowercase();
     secret(&key)
@@ -91,7 +125,7 @@ fn sensitive_key(key: &str) -> bool {
         || key.starts_with("id_")
 }
 fn redact_text(value: &str) -> String {
-    if secret(value) {
+    if secret(value) || resource_identifier(value) {
         "[REDACTED]".to_owned()
     } else {
         value.to_owned()
@@ -241,9 +275,15 @@ fn diagnostic(value: &Value) -> Result<String, String> {
             .unwrap_or(compact(value)?))
     }
 }
-fn duration(value: Option<f64>, label: &str, errors: &mut Vec<String>) -> Option<f64> {
+fn duration(value: Option<&Value>, label: &str, errors: &mut Vec<String>) -> Option<f64> {
     match value {
-        Some(value) if value.is_finite() && value >= 0.0 => Some(value),
+        Some(value)
+            if value
+                .as_f64()
+                .is_some_and(|value| value.is_finite() && value >= 0.0) =>
+        {
+            value.as_f64()
+        }
         Some(_) => {
             errors.push(format!("{label} must be a non-negative finite number"));
             None
@@ -283,7 +323,7 @@ fn legacy(object: &Map<String, Value>, input_digest: String) -> Result<Report, V
             ));
         }
         let time = duration(
-            check.get("durationMs").and_then(Value::as_f64),
+            check.get("durationMs"),
             &format!("check {} durationMs", i + 1),
             &mut errors,
         )
@@ -362,21 +402,44 @@ fn paths(value: &Value) -> Result<Vec<String>, String> {
     if redacted != *value {
         return Ok(vec!["[REDACTED SENSITIVE ASSERTION]".to_owned()]);
     }
-    Ok(redacted
-        .pointer("/snippet/values")
+    let redact_path = |value: String| {
+        if redact_text(&value) != value {
+            "[REDACTED SENSITIVE ASSERTION]".to_owned()
+        } else {
+            value
+        }
+    };
+    let mut found = Vec::new();
+    if let Some(value) = redacted
+        .as_object()
+        .and_then(|value| field(value, "assertion_path"))
+    {
+        found.push(redact_path(value));
+    }
+    if let Some(values) = redacted
+        .as_object()
+        .and_then(|value| value.get("assertion_paths"))
         .and_then(Value::as_array)
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_object)
-        .filter_map(|value| field(value, "traversal"))
-        .map(|value| {
-            if secret(&value) {
-                "[REDACTED SENSITIVE ASSERTION]".to_owned()
-            } else {
-                value
-            }
-        })
-        .collect())
+    {
+        found.extend(
+            values
+                .iter()
+                .filter_map(Value::as_str)
+                .map(ToOwned::to_owned)
+                .map(&redact_path),
+        );
+    }
+    found.extend(
+        redacted
+            .pointer("/snippet/values")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(Value::as_object)
+            .filter_map(|value| field(value, "traversal"))
+            .map(redact_path),
+    );
+    Ok(found)
 }
 fn plan(value: &Value, context: &mut Context) -> Result<(), String> {
     let redacted = redact(value, None)?;
@@ -421,21 +484,24 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
     let mut global_plans = Vec::new();
     let mut summary = None;
     for (event_index, value) in events.iter().enumerate() {
-        let Some(event) = value.as_object() else {
+        let Some(raw_event) = value.as_object() else {
             errors.push("every event must be a JSON object".to_owned());
             continue;
         };
-        if let Err(error) = redacted_object(value, "event") {
-            errors.push(error);
-            continue;
-        }
-        let Some(kind) = field(event, "type") else {
+        let event = match redacted_object(value, "event") {
+            Ok(event) => event,
+            Err(error) => {
+                errors.push(error);
+                continue;
+            }
+        };
+        let Some(kind) = field(&event, "type") else {
             errors.push("every event needs a non-empty type".to_owned());
             continue;
         };
         match kind.as_str() {
             "test_plan" => {
-                let Some(raw_payload) = event.get("test_plan") else {
+                let Some(raw_payload) = raw_event.get("test_plan") else {
                     errors.push("a test_plan event is missing its test_plan object".to_owned());
                     continue;
                 };
@@ -446,18 +512,18 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                         continue;
                     }
                 };
-                let Some(run_key) = key(event, Some(&payload)) else {
+                let Some(run_key) = key(&event, Some(&payload)) else {
                     errors.push("a test_plan event needs test file and run identity".to_owned());
                     continue;
                 };
                 let context = contexts.entry(run_key).or_default();
-                identity(context, event, Some(&payload));
+                identity(context, &event, Some(&payload));
                 if let Err(error) = plan(&Value::Object(payload), context) {
                     errors.push(error);
                 }
             }
             "test_run" => {
-                let Some(raw_run) = event.get("test_run") else {
+                let Some(raw_run) = raw_event.get("test_run") else {
                     errors.push("a test_run event is missing its test_run object".to_owned());
                     continue;
                 };
@@ -476,21 +542,27 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                     errors.push(format!("test_run has an unsupported status {raw}"));
                     continue;
                 };
-                let Some(run_key) = key(event, Some(&run)) else {
+                let Some(run_key) = key(&event, Some(&run)) else {
                     errors.push("a completed test_run needs test file and run identity".to_owned());
                     continue;
                 };
                 let context = contexts.entry(run_key.clone()).or_default();
-                identity(context, event, Some(&run));
-                let elapsed = duration(
-                    run.get("elapsed").and_then(Value::as_f64).or_else(|| {
-                        run.get("duration_ms")
-                            .and_then(Value::as_f64)
-                            .map(|v| v / 1000.0)
-                    }),
-                    "test_run elapsed",
-                    &mut errors,
-                );
+                identity(context, &event, Some(&run));
+                if raw_run.as_object().is_some_and(|raw_run| {
+                    raw_run.contains_key("assertion_path")
+                        || raw_run.contains_key("assertion_paths")
+                }) {
+                    match paths(raw_run) {
+                        Ok(paths) => context.assertions.extend(paths),
+                        Err(error) => errors.push(error),
+                    }
+                }
+                let elapsed = if run.contains_key("elapsed") {
+                    duration(run.get("elapsed"), "test_run elapsed", &mut errors)
+                } else {
+                    duration(run.get("duration_ms"), "test_run duration_ms", &mut errors)
+                        .map(|value| value / 1000.0)
+                };
                 finished.push((
                     run_key,
                     context
@@ -505,8 +577,8 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                 ));
             }
             "diagnostic" => {
-                let item = event.get("diagnostic");
-                let payload = item.and_then(Value::as_object);
+                let item = raw_event.get("diagnostic");
+                let payload = event.get("diagnostic").and_then(Value::as_object);
                 let rendered = match item.map(diagnostic).transpose() {
                     Ok(rendered) => rendered,
                     Err(error) => {
@@ -517,9 +589,9 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                 if let Some(rendered) = rendered.as_ref() {
                     diagnostics.push(rendered.clone());
                 }
-                if let (Some(run_key), Some(item)) = (key(event, payload), item) {
+                if let (Some(run_key), Some(item)) = (key(&event, payload), item) {
                     let context = contexts.entry(run_key).or_default();
-                    identity(context, event, payload);
+                    identity(context, &event, payload);
                     match paths(item) {
                         Ok(paths) => context.assertions.extend(paths),
                         Err(error) => errors.push(error),
@@ -530,7 +602,7 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                 }
             }
             "test_summary" => {
-                let Some(raw_item) = event.get("test_summary") else {
+                let Some(raw_item) = raw_event.get("test_summary") else {
                     errors
                         .push("a test_summary event is missing its test_summary object".to_owned());
                     continue;
@@ -559,7 +631,7 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
                     .get("change")
                     .and_then(Value::as_object)
                     .and_then(|change| field(change, "action"))
-                    .or_else(|| field(event, "action"))
+                    .or_else(|| field(&event, "action"))
                     .unwrap_or_else(|| "planned change".to_owned());
                 global_plans.push(format!("{action}: resource identifier redacted"));
             }
@@ -582,7 +654,13 @@ fn stream(events: &[Value], input_digest: String) -> Result<Report, Vec<String>>
     let failed = finished
         .iter()
         .any(|(_, _, state, _, _)| state == "fail" || state == "error");
-    if (summary == "pass" && failed) || ((summary == "fail" || summary == "error") && !failed) {
+    let summary_matches_results = match summary.as_str() {
+        "pass" => !failed,
+        "fail" | "error" => failed,
+        "skip" => finished.iter().all(|(_, _, state, _, _)| state == "skip"),
+        _ => false,
+    };
+    if !summary_matches_results {
         return Err(vec![
             "test_summary status does not match completed test_run results".to_owned(),
         ]);
@@ -912,11 +990,62 @@ mod tests {
     const EXPLICIT_SENSITIVE_FIXTURE: &str =
         include_str!("../examples/explicit-sensitive-output.jsonl");
     const FIXTURE: &str = include_str!("../examples/opentofu-real-stream.jsonl");
+    const RESOURCE_IDENTIFIER_FIXTURE: &str =
+        include_str!("../tests/fixtures/verification-9-resource-identifiers.jsonl");
+    const DURATION_STRING_FIXTURE: &str =
+        include_str!("../tests/fixtures/verification-9-duration-string.json");
+    const ELAPSED_STRING_FIXTURE: &str =
+        include_str!("../tests/fixtures/verification-9-elapsed-string.jsonl");
+    const SKIPPED_SUMMARY_FIXTURE: &str =
+        include_str!("../tests/fixtures/verification-9-skipped-summary.jsonl");
     #[test]
     fn legacy_is_strict() {
         assert!(parse(r#"{"run":"r","environment":"e","recordedAt":"x","checks":[{"name":"ok","status":"pass"}]}"#).is_ok());
         assert!(parse(r#"{"run":"r","environment":"e","recordedAt":"x","checks":[{"name":"ok","status":"mystery"}]}"#).is_err());
         assert!(parse(r#"{"run":"r","environment":"e","recordedAt":"x","checks":[{"name":"ok","status":"pass","durationMs":-1}]}"#).is_err());
+        assert!(parse(r#"{"run":"r","environment":"e","recordedAt":"x","checks":[{"name":"ok","status":"pass","durationMs":"fast"}]}"#).is_err());
+        assert!(parse(r#"{"run":"r","environment":"e","recordedAt":"x","checks":[{"name":"ok","status":"pass","durationMs":false}]}"#).is_err());
+    }
+    #[test]
+    fn verification_9_counterexamples_are_rejected_or_redacted() {
+        for fixture in [DURATION_STRING_FIXTURE, ELAPSED_STRING_FIXTURE] {
+            let errors = parse(fixture).unwrap_err();
+            assert!(
+                errors
+                    .iter()
+                    .any(|error| error.contains("must be a non-negative finite number"))
+            );
+        }
+        let errors = parse(SKIPPED_SUMMARY_FIXTURE).unwrap_err();
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("test_summary status does not match"))
+        );
+
+        let report = parse(RESOURCE_IDENTIFIER_FIXTURE).unwrap();
+        for output in [
+            junit(&report),
+            serde_json::to_string(&artifact(&report)).unwrap(),
+            page(&artifact(&report)),
+        ] {
+            for identifier in ["arn:aws", "i-0abc123", "aws_instance.web"] {
+                assert!(!output.contains(identifier));
+            }
+        }
+
+        let demo = parse(DEMO_FIXTURE).unwrap();
+        assert_eq!(demo.cases.len(), 2);
+        assert!(
+            demo.cases.iter().all(|case| {
+                case.assertions == vec!["aws_security_group.web.ingress".to_owned()]
+            })
+        );
+        assert!(
+            serde_json::to_string(&artifact(&demo))
+                .unwrap()
+                .contains(REDACTED)
+        );
     }
     #[test]
     fn real_stream_is_scoped_and_redacted() {

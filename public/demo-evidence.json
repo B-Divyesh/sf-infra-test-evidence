@@ -1,0 +1,56 @@
+{
+  "assertionPaths": [
+    "aws_security_group.web.ingress",
+    "aws_security_group.web.ingress"
+  ],
+  "diagnostics": [],
+  "failures": [
+    {
+      "message": "expected public ingress to be denied",
+      "status": "fail",
+      "test": "blocks_public_ingress"
+    }
+  ],
+  "planSummary": [
+    "update: resource identifier redacted",
+    "test_plan={\"outputs\":{\"ingress_note\":\"[REDACTED]\"},\"path\":\"tests/network.tftest.hcl\",\"resource_changes\":[],\"run\":\"blocks_public_ingress\"}"
+  ],
+  "provenance": {
+    "inputSha256": "85bfacaf2fd535dcf3a29441cac951ca408d87f723d9a96bbd814e3050711522",
+    "redaction": "Sensitive values and resource identifiers are redacted by default.",
+    "sourceKind": "terraform-test-json",
+    "tool": "infra-test-evidence 0.1.0"
+  },
+  "schemaVersion": 1,
+  "testCases": [
+    {
+      "assertionPaths": [
+        "aws_security_group.web.ingress"
+      ],
+      "durationSeconds": 0.18,
+      "failure": null,
+      "inputs": [
+        "test_file=tests/network.tftest.hcl"
+      ],
+      "name": "private_network_only",
+      "planSummary": [],
+      "status": "pass"
+    },
+    {
+      "assertionPaths": [
+        "aws_security_group.web.ingress"
+      ],
+      "durationSeconds": 0.31,
+      "failure": "expected public ingress to be denied",
+      "inputs": [
+        "test_file=tests/network.tftest.hcl",
+        "outputs={\"ingress_note\":\"[REDACTED]\"}"
+      ],
+      "name": "blocks_public_ingress",
+      "planSummary": [
+        "test_plan={\"outputs\":{\"ingress_note\":\"[REDACTED]\"},\"path\":\"tests/network.tftest.hcl\",\"resource_changes\":[],\"run\":\"blocks_public_ingress\"}"
+      ],
+      "status": "fail"
+    }
+  ]
+}

@@ -21,7 +21,7 @@ test('@claim:site-demo opens, resets, and exits the in-memory sample from the fi
   await expect(proof.getByText('aws_security_group.web.ingress', { exact: true })).toBeVisible();
   await expect(proof.getByText('[REDACTED]', { exact: true })).toBeVisible();
   await expect(proof.getByText('report.xml', { exact: true })).toBeVisible();
-  await expect(proof.getByText(/SHA-256 926eb21/)).toBeVisible();
+  await expect(proof.getByText(/SHA-256 85bfaca…0711522/)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Recorded checks' })).toBeVisible();
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
     await page.setViewportSize(viewport);
@@ -70,6 +70,35 @@ test('@claim:browser-record-import renders compact record details and validation
   await expect(page.getByText('Make this record reviewable')).toBeVisible();
   await expect(page.getByText('Add a non-empty “run” field.')).toBeVisible();
   await expect(page.getByText('Check 1 needs a supported status.')).toBeVisible();
+  await page.locator('#evidence-file').setInputFiles({
+    name: 'malformed-duration-and-check.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ run: 'staging-2026-08-27.1', environment: 'staging', recordedAt: '2026-08-27T12:00:00Z', checks: [{ name: 'HTTP health endpoint', status: 'pass', durationMs: 'fast' }, 'not a check'] })),
+  });
+  await expect(page.getByText('Make this record reviewable')).toBeVisible();
+  await expect(page.getByText('Check 1 needs a non-negative duration.')).toBeVisible();
+  await expect(page.getByText('Check 2 must be an object.')).toBeVisible();
+  await expect(page.locator('#status')).toHaveText('Needs attention');
+});
+
+test('@claim:demo-artifact-fidelity renders the bundled CLI conversion fields from the shipped artifact', async ({ page, request }) => {
+  const response = await request.get('/demo-evidence.json');
+  expect(response.status()).toBe(200);
+  const artifact = await response.json() as {
+    provenance: { inputSha256: string };
+    testCases: Array<{ name: string; status: string; durationSeconds: number; assertionPaths: string[] }>;
+  };
+  const failed = artifact.testCases.find((testCase) => testCase.status === 'fail');
+  expect(failed).toBeTruthy();
+
+  await page.goto('/demo/?demo=1');
+  const proof = page.getByLabel('Failed OpenTofu test ready for review');
+  await expect(proof.getByText(failed!.name, { exact: true })).toBeVisible();
+  await expect(proof.getByText(failed!.assertionPaths[0], { exact: true })).toBeVisible();
+  await expect(proof.locator('dt', { hasText: 'Failed check' }).locator('..').locator('dd')).toContainText(`${Math.round(failed!.durationSeconds * 1000)} ms`);
+  await expect(proof.getByText('[REDACTED]', { exact: true })).toBeVisible();
+  const shortHash = `${artifact.provenance.inputSha256.slice(0, 7)}…${artifact.provenance.inputSha256.slice(-7)}`;
+  await expect(proof.getByText(`SHA-256 ${shortHash}`, { exact: true })).toBeVisible();
 });
 
 test('keeps the landing action and all three product facts in a 1440px first viewport', async ({ page }) => {
