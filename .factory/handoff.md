@@ -3,7 +3,8 @@
 **Work order:** `infra-test-evidence-repair-8`
 **Base verifier report:** `.factory/verification-9.md` at
 `283838aa87005cfbb219b67eaa0ff4fe55f71cf0`
-**Repair commit:** `5f447ee` (`repair: redact evidence identifiers and validate streams`)
+**Repair commits:** `5f447ee` (`repair: redact evidence identifiers and validate streams`)
+and `3dee6b5` (`repair: redact legacy evidence identifiers`)
 **Live URL:** https://infra-test-evidence.sociobot.in
 **Status:** deployed and verified.
 
@@ -11,7 +12,8 @@
 
 - Redacts text containing AWS ARNs or EC2 instance IDs before a JUnit report,
   evidence JSON, or reviewer HTML page is rendered. The exact verifier-style
-  fixture covers diagnostic, failure, and plan-output positions.
+  fixture covers diagnostic, failure, plan-output, and compact-record label
+  positions.
 - Reads `assertion_path` and `assertion_paths` from completed `test_run`
   events. The bundled demo now preserves the two real assertion paths.
 - Adds a sensitive test-plan output to the bundled demo and ships
@@ -86,14 +88,14 @@ the clean install: all 22 claims passed. The new counterexample commands are:
 
 ## Deployment and live identity
 
-- Pushed `5f447ee` to `origin/main`, built `dist/site/`, and deployed it with
-  `/opt/fleet/lib/deploy-static.sh infra-test-evidence dist/site` on
+- Pushed both repair commits to `origin/main`, built `dist/site/`, and deployed
+  it with `/opt/fleet/lib/deploy-static.sh infra-test-evidence dist/site` on
   2026-09-02 UTC. The scoped Static Web App upload completed successfully and
   the custom domain returned HTTPS 200.
-- `/opt/fleet/lib/verify-url.sh` passed against the live URL: 795 ms load,
+- `/opt/fleet/lib/verify-url.sh` passed against the final live URL: 864 ms load,
   zero console/page errors, title present, `lang=en`, one h1, one main,
   zero missing image alt attributes, and zero unnamed buttons. Evidence:
-  `/tmp/infra-test-evidence-live-repair.XKtV4q`.
+  `/tmp/infra-test-evidence-live-final.vlwPKf`.
 - Every publicly served file in the fresh `dist/site/` matched the live bytes.
   `staticwebapp.config.json` is intentionally not a public asset (live 404),
   so it was excluded from the public-file comparison.
