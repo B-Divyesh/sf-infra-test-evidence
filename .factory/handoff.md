@@ -27,6 +27,10 @@ zero audit vulnerabilities. Every one of the 24 exact commands in
 - `npm run qa:a11y` — 2 Axe tests.
 - `npm run package:check` — `cargo package --locked` and `npm pack --dry-run`.
 
+After the final output-label adjustment, a second no-local clone of
+`2f33b2be0b9f8874e1aef42c3cd69805cbb4e882` again passed all 24 exact claim
+commands separately.
+
 Production was deployed with the Azure Static Web Apps CLI from `dist/site/`.
 Cold live Chromium checks at 390×844 and 1440×900 confirmed the revised copy,
 the isolated `?demo=1` flow, all three output paths above the fold, and no

@@ -44,6 +44,10 @@ check` (8 Rust and 28 frontend tests), `npm run build`, `npm run qa:browser`
 (22 browser tests), `npm run qa:a11y` (2 Axe tests), and `npm run
 package:check`.
 
+After the final visible-label repair, a second `git clone --no-local` of
+`2f33b2be0b9f8874e1aef42c3cd69805cbb4e882` again ran all 24 exact claim
+commands separately with no failures.
+
 After deployment, cold Chromium checks at 390×844 and 1440×900 found no console
 errors and verified the revised landing copy plus all three demo output paths
 above the fold. Live Axe checks reported zero violations on `/`, `/demo/?demo=1`,
