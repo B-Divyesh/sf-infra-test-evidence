@@ -1,49 +1,52 @@
-# Infra Test Evidence verification 8 handoff — PASS
+# Infra Test Evidence adversarial review 1 handoff — FAIL
 
-**Candidate:** `f53f1949e56370f4646c52e5d64d589e8f3f54d4`
+**Work order:** `infra-test-evidence-review-1`
+
 **Live URL:** https://infra-test-evidence.sociobot.in
-**Report:** `.factory/verification-8.md`
 
-Independent verification is **PASS**. No product code, deployment, DNS,
-infrastructure, or external product resource was modified.
+**Review:** `.factory/review-1.md`
 
-## What was verified
+## What was done
 
-- All 15 declared claims passed from the clean checkout, including the packaged
-  CLI demo/conversion/redaction/fail-closed checks and the browser recording,
-  privacy, static-artifact, and one-click demo checks.
-- `npm run check`, Rust format/Clippy, audit, production build, package checks,
-  clean consumer CLI use, full Playwright, and Axe checks all passed.
-- A crate installed from the packaged source created JUnit plus static reviewer
-  outputs from the real stream, redacted sensitive data, and rejected invalid
-  input with exit 2.
-- Fresh live desktop and 390 px flows passed. The demo is isolated in memory;
-  request logs showed same-origin-only traffic and no browser storage. Live
-  Axe found no serious/critical issues in either scheme on all routes.
-- Live Lighthouse scored 100 for performance, accessibility, best practices,
-  and SEO. Production JS/CSS are 2.21/3.16 kB gzip.
-- The live deployment matches the candidate build byte-for-byte for root,
-  demo, policy, 404, recording, JS, and CSS assets.
+- Reviewed the live product cold at 390 × 844 and 1440 × 900.
+- Audited every landing and README sentence, plus headings, actions, and terms.
+- Exercised the one-click demo, local file replacement, reset, and exit.
+- Checked request origins, cookies, localStorage, sessionStorage, and IndexedDB.
+- Ran every command in `.factory/claims.json` separately from a clean clone.
+- Rechecked live routes, metadata, links, 404 behavior, focus, console output,
+  and Axe results.
+- Read the prior handoff and searched repository history for earlier review and
+  polish reports. None exist.
+- Did not modify product code, deployment, DNS, infrastructure, or resources.
 
-## Run or verify
+## Result
+
+**FAIL:** 20 findings: 6 blocking and 14 minor.
+
+The primary blocker is the weak demo. Its seeded results begin below the first
+viewport at both requested sizes, and the two generic passing checks do not
+show the CLI's failed-test conversion, redaction, provenance, or output files.
+Five published capabilities are also missing from the claims inventory.
+
+All 15 declared claim commands passed. Same-origin/no-storage behavior passed,
+all crawled product links behaved as expected, normal live routes had no
+console errors, the fleet URL verifier passed, and live Axe scans found no
+violations.
+
+## Verify
 
 ```sh
+cat .factory/review-1.md
 npm ci
-npm run check
-cargo fmt --check
-cargo clippy --locked --all-targets -- -D warnings
+npm test
 npm run build
-npm run package:check
-npm run consumer:check
 npm run qa:browser
-npm run qa:a11y
+/opt/fleet/lib/verify-url.sh https://infra-test-evidence.sociobot.in /tmp/ite-verify
 ```
 
-Try the browser sandbox at `/demo/`; run the bundled CLI sample with
-`infra-test-evidence --demo` after installation. See the full exact evidence,
-headers, hashes, and claim matrix in `.factory/verification-8.md`.
+## Work left
 
-## Known gaps / next steps
-
-No release-blocking gaps found. `.factory/brief.json` is not present in this
-checkout; the work-order researched brief was used for verification.
+Resolve F-1-1 through F-1-20 in `.factory/review-1.md`, then rerun the entire
+review from a clean clone. Do not treat the passing declared tests as a pass
+until the demo, unlisted claims, copy, focus, first-screen facts, and 404
+metadata findings are gone.
