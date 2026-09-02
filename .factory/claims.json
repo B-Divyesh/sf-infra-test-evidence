@@ -37,7 +37,7 @@
   {
     "id": "cross-provider-resource-redaction",
     "claim": "AWS subnet and security-group IDs, Azure resource IDs, and GCP instance paths are removed from JUnit, JSON, and HTML evidence.",
-    "where": "README conversion section and evidence safety section",
+    "where": "README conversion section",
     "test": "npm run test:frontend -- --testNamePattern '@claim:cross-provider-resource-redaction'",
     "sandbox": "fresh packaged CLI; one fixture puts all four identifiers in structured plan values and failure text; scan JUnit XML, reviewer JSON, and reviewer HTML"
   },
