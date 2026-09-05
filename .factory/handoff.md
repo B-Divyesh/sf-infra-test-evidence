@@ -1,89 +1,52 @@
-# Infra Test Evidence — polish 3 handoff
+# Verify infrastructure test evidence conversion — handoff
 
-## Shipped result
+## Result
 
-- **Release repair commit:** `e45ce587daaeb212e7c4299c412fd68f9a578bcc`
-- **Production deployment:** `2decafa3-46b9-4278-8299-743e373cfb2a`
-- **Live URL:** https://infra-test-evidence.sociobot.in
-- **Result:** PASS — review-3’s two blocking and two minor findings, plus every earlier finding, are closed and rechecked.
+**FAIL.** Independent verification 13 found one `P2` defect and zero untested
+claims. The implementation candidate is
+`e45ce587daaeb212e7c4299c412fd68f9a578bcc`; the documentation commit reviewed
+is `01a144941610cc99a3244a98bb54f54089a6d948`. The deployed runtime matches the
+candidate for every checked document, asset, recording, demo artifact, and
+social image.
 
-The repair standardizes the three output names in runtime status text, uses
-**compact record** for the browser input everywhere, replaces vague
-“provenance” with the input SHA-256, and replaces README “assertion
-traversals” with assertion paths. It also expands the copy regression to cover
-runtime TypeScript, demo/privacy pages, README, claims, recording, and demo
-documentation; adds a browser check for direct `?demo=1`; and verifies the
-canonical labels and dynamic file error in a browser.
+The remaining defect is documented in `.factory/verification-13.md`:
 
-The catalog description is now a verb-first 90-character sentence in
-`.factory/catalog-description.txt`.
+- In a fresh iPhone 13 browser viewport (`390 × 664`), the job, audience, and
+  primary action are visible before scrolling.
+- The required post-click expectation starts at `y=666.52`, and the three
+  required product facts start at `y=712.13`. They are below the first screen.
+- Existing tests cover those facts only at desktop height and use `390 × 844`
+  for other first-viewport checks.
 
-## Exact verification evidence
+No product code was changed.
 
-Clean clone: `/tmp/infra-test-evidence-polish3-clean-RxQCei/repo`, created by
-`git clone --no-local /work/repo` at `e45ce587daaeb212e7c4299c412fd68f9a578bcc`.
-After `npm ci` (zero audit vulnerabilities), every one of the 24 exact
-commands in `.factory/claims.json` passed separately. The clone also passed:
+## Verification completed
 
-```sh
-npm run check        # 8 Rust tests + 28 frontend tests
-npm run build        # dist/site/, 6.78 kB raw / 2.70 kB gzip initial JS
-npm run qa:browser   # 26 tests
-npm run qa:a11y      # 2 Axe projects
-npm run package:check
-```
+- All 24 exact commands in `.factory/claims.json` passed separately from a
+  fresh GitHub clone after `npm ci`.
+- `npm run check`, build, 26 browser tests, two Axe tests, package check,
+  consumer check, Rust formatting, strict Clippy, and npm audit passed.
+- A packaged CLI installed into a new consumer root passed demo, normal,
+  invalid, and recovery exercises.
+- Fresh live desktop and phone contexts covered demo/import/reset/exit,
+  keyboard/focus, reduced motion, 200% text, privacy storage and requests,
+  route titles, links, legal pages, and the designed HTTP 404.
+- Live Axe found no serious/critical issue. The deliberate 404 response was
+  treated as expected.
+- Live Lighthouse scored 100 in Performance, Accessibility, Best Practices,
+  and SEO; LCP was 1.0 s, CLS 0, and blocking time 0 ms.
+- Root and demo passed `/opt/fleet/lib/verify-url.sh` with no unexpected
+  browser errors.
+- All earlier review and verification findings, including minor ones, were
+  rechecked. Their current dispositions are recorded in verification 13.
 
-No offline claim is published, so no offline behavior is promised. The
-applicable privacy contract is tested by `@claim:reader-private`: no upload,
-external request, cookies, localStorage, sessionStorage, or IndexedDB during
-the demo/import flow.
+## Evidence and next step
 
-The deployment used:
+- Full report: `.factory/verification-13.md`
+- Copied report: `/work/.evidence/qa-report.md`
+- Machine result: `/work/.evidence/qa-result.json`
+- Supporting evidence: `/work/.evidence/infra-test-evidence-verify-13/`
 
-```sh
-/opt/fleet/lib/deploy-static.sh infra-test-evidence dist/site
-```
-
-Cold factory URL verification passed without console errors:
-
-- Root: 815 ms; evidence `/tmp/infra-test-evidence-polish3-live-root-TnqRC6/`
-- Demo: 595 ms; evidence `/tmp/infra-test-evidence-polish3-live-demo-AGD7Dw/`
-- Browser, route, privacy, focus, demo-reset, and live Axe evidence:
-  `/tmp/infra-test-evidence-polish3-live-browser-S0rSti/live-check.json`
-- Mobile/desktop screenshots:
-  `/tmp/infra-test-evidence-polish3-live-browser-S0rSti/landing-390.png`,
-  `landing-1440.png`, `demo-390.png`, and `demo-1440.png`
-
-The final cold check found all routes healthy: `/`, `/demo/?demo=1`,
-`/privacy/`, and `/terms/` return 200; `/not-found` returns the designed 404.
-Each has one h1 and main landmark, route title, canonical metadata, and zero
-serious or critical Axe findings. The live root, demo, privacy, terms, and 404
-were checked for titles/routing; all internal links resolve. The live root and
-demo emitted no console or page errors. The expected 404 document response is
-not treated as an application console error.
-
-`/demo/?demo=1` remains an isolated one-click sample: it shows the failed
-OpenTofu proof, redaction, assertion path, input hash, and three output paths
-above the fold. Reset restores only the in-memory sample; Start for real
-returns to the empty real reader.
-
-## Run and deploy
-
-```sh
-npm ci
-npm run check
-npm run build
-npm run qa:browser
-npm run qa:a11y
-npm run package:check
-```
-
-Deploy `dist/site/` with the factory static deploy command above. Build the
-CLI locally with `cargo build --release --locked`; do not publish it from this
-worktree.
-
-## Known gaps and next steps
-
-None. The product intentionally has no AI or sync feature: deterministic local
-conversion and redaction are the audit boundary, and remote model or sync
-traffic would weaken its stated privacy behavior.
+Before re-verification, keep the click-expectation line and all three product
+facts within a fresh `390 × 664` browser viewport. Add a regression using that
+browser viewport. Then rerun all claims and the live phone check.
