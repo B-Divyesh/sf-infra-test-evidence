@@ -135,6 +135,27 @@ test('keeps the landing action and all three product facts in a 1440px first vie
   }
 });
 
+test('keeps the landing job, audience, action, result, and facts in a 390px phone browser viewport', async ({ page }) => {
+  const viewport = { width: 390, height: 664 };
+  await page.setViewportSize(viewport);
+  await page.goto('/');
+
+  const firstScreen = [
+    page.getByRole('heading', { level: 1, name: 'Turn infrastructure tests into reviewable evidence' }),
+    page.getByText('For infrastructure-module maintainers who need reviewers to inspect failed OpenTofu or Terraform tests without uploading logs.', { exact: true }),
+    page.locator('.intro').getByRole('link', { name: 'Try it with sample data' }),
+    page.getByText('See a failed test, redaction, and output files.', { exact: true }),
+    ...['Runs in your browser', 'No trackers or uploads', 'Free under the MIT License'].map((fact) => page.getByText(fact, { exact: true })),
+  ];
+
+  for (const item of firstScreen) {
+    await expect(item).toBeVisible();
+    const box = await item.boundingBox();
+    expect(box, 'first-screen content has a bounding box').not.toBeNull();
+    expect(box!.y + box!.height, 'first-screen content stays in the phone browser viewport').toBeLessThanOrEqual(viewport.height);
+  }
+});
+
 test('@claim:reader-private keeps local evidence off the network and out of browser storage', async ({ browser }) => {
   const context = await browser.newContext({ baseURL: origin });
   const page = await context.newPage();

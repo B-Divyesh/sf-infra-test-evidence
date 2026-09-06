@@ -28,3 +28,6 @@ h1 { font-size: clamp(2.7rem, 6vw, 4.6rem); }
 .demo-proof dd { margin: .2rem 0 0; font-size: .84rem; overflow-wrap: anywhere; }
 @media (prefers-color-scheme: dark) { .demo-proof { background: #33251f; } .demo-proof .eyebrow { color: var(--coral); } }
 @media (max-width: 620px) { .demo-intro { padding-top: 1rem; padding-bottom: .25rem; } .demo-proof { margin-top: .1rem; padding: .5rem; } .demo-proof dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem .55rem; margin-top: .5rem; } .demo-proof dd { font-size: .7rem; line-height: 1.25; } .demo-proof dt { font-size: .65rem; } .demo-proof h3 { font-size: 1rem; } }
+
+/* Keep the whole first decision — job, action, result, and facts — visible in a phone browser viewport. */
+@media (max-width: 620px) { h1 { font-size: 1.875rem; } .hero-facts { margin-top: 1rem; } }
