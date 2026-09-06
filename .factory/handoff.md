@@ -6,6 +6,10 @@
 implementation commit `b0d8ea1c6a58fa66bc082c539df0a908e50b986b` and is live
 at `https://infra-test-evidence.sociobot.in`.
 
+The implementation SHA differs from the documentation evidence commit
+`4a7778ec1a5761cbd4657cebec0c92f671ee58a7`, which records this handoff and
+QA 14 report.
+
 At a fresh iPhone 13 browser viewport (`390 × 664`), the page now shows the
 job, audience, first action, expected result, and all three product facts
 before scrolling. Their final bottom coordinates are 247.41, 377.84, 456.13,

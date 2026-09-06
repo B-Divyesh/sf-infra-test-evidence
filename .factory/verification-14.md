@@ -3,6 +3,7 @@
 **Work order:** `infra-test-evidence-repair-10`  
 **Verdict:** **PASS**  
 **Implementation candidate:** `b0d8ea1c6a58fa66bc082c539df0a908e50b986b`  
+**Documentation evidence:** `4a7778ec1a5761cbd4657cebec0c92f671ee58a7`
 **Live URL:** https://infra-test-evidence.sociobot.in
 
 ## Finding closed
