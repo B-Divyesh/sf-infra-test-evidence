@@ -1,52 +1,81 @@
-# Verify infrastructure test evidence conversion — handoff
+# Convert infrastructure tests into reviewable evidence — handoff
 
 ## Result
 
-**FAIL.** Independent verification 13 found one `P2` defect and zero untested
-claims. The implementation candidate is
-`e45ce587daaeb212e7c4299c412fd68f9a578bcc`; the documentation commit reviewed
-is `01a144941610cc99a3244a98bb54f54089a6d948`. The deployed runtime matches the
-candidate for every checked document, asset, recording, demo artifact, and
-social image.
+**PASS.** The phone first-screen defect from verification 13 is fixed in
+implementation commit `b0d8ea1c6a58fa66bc082c539df0a908e50b986b` and is live
+at `https://infra-test-evidence.sociobot.in`.
 
-The remaining defect is documented in `.factory/verification-13.md`:
+At a fresh iPhone 13 browser viewport (`390 × 664`), the page now shows the
+job, audience, first action, expected result, and all three product facts
+before scrolling. Their final bottom coordinates are 247.41, 377.84, 456.13,
+552.02, 589.63, 619.23, and 648.84 px respectively. The final fact has 15.16
+px of room before the browser fold.
 
-- In a fresh iPhone 13 browser viewport (`390 × 664`), the job, audience, and
-  primary action are visible before scrolling.
-- The required post-click expectation starts at `y=666.52`, and the three
-  required product facts start at `y=712.13`. They are below the first screen.
-- Existing tests cover those facts only at desktop height and use `390 × 844`
-  for other first-viewport checks.
+## What changed
 
-No product code was changed.
+- Reduced only the mobile landing heading scale and the gap before the facts.
+  Desktop layout, copy, CLI behavior, demo data, and privacy behavior are
+  unchanged.
+- Added a browser regression that measures the visible result of the page at
+  `390 × 664`: the job, audience, action, expected result, and each fact must
+  all have bottom edges within the viewport.
 
-## Verification completed
+## Job, audience, and first action
 
-- All 24 exact commands in `.factory/claims.json` passed separately from a
-  fresh GitHub clone after `npm ci`.
-- `npm run check`, build, 26 browser tests, two Axe tests, package check,
-  consumer check, Rust formatting, strict Clippy, and npm audit passed.
-- A packaged CLI installed into a new consumer root passed demo, normal,
-  invalid, and recovery exercises.
-- Fresh live desktop and phone contexts covered demo/import/reset/exit,
-  keyboard/focus, reduced motion, 200% text, privacy storage and requests,
-  route titles, links, legal pages, and the designed HTTP 404.
-- Live Axe found no serious/critical issue. The deliberate 404 response was
-  treated as expected.
-- Live Lighthouse scored 100 in Performance, Accessibility, Best Practices,
-  and SEO; LCP was 1.0 s, CLS 0, and blocking time 0 ms.
-- Root and demo passed `/opt/fleet/lib/verify-url.sh` with no unexpected
-  browser errors.
-- All earlier review and verification findings, including minor ones, were
-  rechecked. Their current dispositions are recorded in verification 13.
+Before scrolling, the landing page says:
 
-## Evidence and next step
+- Job: turn infrastructure tests into reviewable evidence.
+- Audience: infrastructure-module maintainers reviewing failed OpenTofu or
+  Terraform tests without uploading logs.
+- First action: **Try it with sample data**. It opens a failed bundled test
+  with redaction and the three generated output paths.
 
-- Full report: `.factory/verification-13.md`
-- Copied report: `/work/.evidence/qa-report.md`
-- Machine result: `/work/.evidence/qa-result.json`
-- Supporting evidence: `/work/.evidence/infra-test-evidence-verify-13/`
+## Verification
 
-Before re-verification, keep the click-expectation line and all three product
-facts within a fresh `390 × 664` browser viewport. Add a regression using that
-browser viewport. Then rerun all claims and the live phone check.
+From a fresh remote clone of implementation commit `b0d8ea1`, after `npm ci`:
+
+- All 24 exact commands in `.factory/claims.json` passed separately.
+- `npm test` and `npm run check` passed: 8 Rust tests and 28 frontend tests.
+- `npm run build` produced `dist/site/`; initial JavaScript is 6.78 kB raw /
+  2.70 kB gzip and CSS is 11.79 kB raw / 3.39 kB gzip.
+- `npm run qa:browser` passed 28 tests and `npm run qa:a11y` passed 2 Axe
+  projects. `npm run package:check`, `npm run consumer:check`, `cargo fmt
+  --check`, strict Clippy, and `npm audit --audit-level=high` also passed.
+- A separately installed packaged CLI passed `--demo`, normal conversion,
+  invalid-duration rejection with exit 2, and a valid recovery run.
+- Fresh live desktop and iPhone 13 contexts verified the demo banner, realistic
+  failed evidence, reset, exit, empty browser storage, empty cookies,
+  same-origin-only requests, keyboard skip link, reduced motion, Privacy,
+  Terms, and the designed HTTP 404. The 404 console message is expected from
+  the deliberate 404 response; normal routes had no browser errors.
+- `/opt/fleet/lib/verify-url.sh` passed cold for `/` and `/demo/?demo=1` with
+  title, language, one h1, main landmark, image-alt, and button-name checks.
+- Live Axe found no serious or critical issues on root, demo, Privacy, or
+  Terms in both contexts. Live mobile Lighthouse scored 100 for Performance,
+  Accessibility, Best Practices, and SEO (LCP 829 ms, CLS 0, TBT 0 ms).
+
+The static deployment helper reused the existing product Static Web App and
+published the built `dist/site/`. The live root serves
+`/assets/style-DQWrmAgu.css`, matching the verified build.
+
+## Earlier findings
+
+Verification 13's complete disposition table was reviewed before this change.
+All earlier converter, redaction, validation, package, demo, privacy,
+accessibility, routing, cache/security, copy, claim, and terminology findings
+remain closed through the clean claim run, full gates, and cold live audit.
+The only open item in that report, F-13-1, is closed by the new phone-fold
+regression and live measurement above.
+
+## Evidence and known gaps
+
+Evidence is in `/work/.evidence/infra-test-evidence-repair-10/`; the catalog
+description was copied to `/work/.evidence/catalog-description.txt`.
+
+There are no current product defects known. The repository still lacks the
+historical `.factory/brief.json`; the supplied researched brief remains the
+acceptance source, as recorded by verification 13. The product has no backend,
+accounts, payment offer, remote state access, offline promise, or service
+worker, so backend persistence, billing, and offline-update checks do not
+apply.
